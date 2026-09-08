@@ -27,6 +27,7 @@ from __future__ import annotations
 import datetime
 import logging
 import os
+import signal
 import socket
 import time
 import traceback
@@ -41,8 +42,9 @@ import ckan.plugins as plugins
 
 __all__ = [
     "DEFAULT_QUEUE_NAME", "DEFAULT_JOB_LIST_LIMIT", "Job", "Queue", "Worker",
-    "add_queue_name_prefix", "remove_queue_name_prefix", "get_all_queues",
-    "get_queue", "enqueue", "job_from_id", "dictize_job", "test_job",
+    "JobTimeoutException", "add_queue_name_prefix", "remove_queue_name_prefix",
+    "get_all_queues", "get_queue", "enqueue", "job_from_id", "dictize_job",
+    "get_current_job", "test_job",
 ]
 
 log = logging.getLogger(__name__)
@@ -55,6 +57,28 @@ POLL_INTERVAL = 1.0
 
 #: seconds between checks for jobs whose worker died
 STALE_CHECK_INTERVAL = 60.0
+
+#: seconds a job gets, after its soft timeout, to clean up before it is
+#: killed for good
+TIMEOUT_GRACE = 10.0
+
+# the job being performed by this process, see get_current_job()
+_current_job: Optional[Job] = None
+
+
+class JobTimeoutException(Exception):
+    u'''
+    Raised inside a job when its timeout is reached, so that the job can
+    clean up. Shortly afterwards the worker kills the job for good.
+    '''
+
+
+def get_current_job() -> Optional[Job]:
+    u'''
+    Return the job being performed by the current process, or None when
+    not called from inside a background job.
+    '''
+    return _current_job
 
 
 def _get_queue_name_prefix() -> str:
@@ -486,7 +510,10 @@ class Worker:
 
     def _wait_for_horse(self, pid: int, job: Job) -> None:
         timeout = job.timeout if job.timeout and job.timeout > 0 else None
-        deadline = time.monotonic() + timeout if timeout else None
+        # the child raises JobTimeoutException at `timeout` seconds; the
+        # hard kill only happens if it does not exit on its own after that
+        deadline = time.monotonic() + timeout + TIMEOUT_GRACE if timeout \
+            else None
         while True:
             waited, status = os.waitpid(pid, os.WNOHANG)
             if waited == pid:
@@ -515,7 +542,10 @@ class Worker:
 
         :returns: True if the job succeeded.
         '''
+        global _current_job
         self._dispose_database()
+        _current_job = job
+        alarm = self._start_soft_timeout(job)
         try:
             job.perform()
         except BaseException as exc:
@@ -526,7 +556,32 @@ class Worker:
             self.backend.finish(job.id)
             return True
         finally:
+            self._stop_soft_timeout(alarm)
+            _current_job = None
             self._dispose_database()
+
+    def _start_soft_timeout(self, job: Job) -> Optional[Any]:
+        # SIGALRM only works in the main thread of the (forked) process;
+        # anywhere else the hard timeout of the parent still applies
+        if not job.timeout or job.timeout <= 0:
+            return None
+        try:
+            def on_alarm(signum: int, frame: Any) -> None:
+                raise JobTimeoutException(
+                    'Job %s timed out after %s seconds' % (
+                        job.id, job.timeout))
+            previous = signal.signal(signal.SIGALRM, on_alarm)
+            signal.alarm(int(job.timeout))
+            return previous
+        except ValueError:
+            return None
+
+    @staticmethod
+    def _stop_soft_timeout(previous: Optional[Any]) -> None:
+        if previous is None:
+            return
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, previous)
 
     def handle_exception(self, job: Job, exc: BaseException) -> None:
         log.exception('Job %s on worker %s raised an exception: %s',

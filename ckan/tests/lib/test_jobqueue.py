@@ -29,8 +29,31 @@ def sleep_job(seconds):
     time.sleep(seconds)
 
 
+def stubborn_job(seconds):
+    # ignores the soft timeout, so the worker has to kill it
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        try:
+            time.sleep(deadline - time.monotonic())
+        except jobs.JobTimeoutException:
+            pass
+
+
 def crash_job():
     os._exit(3)
+
+
+def record_current_job(path):
+    job = jobs.get_current_job()
+    write_file(path, job.id if job else "none")
+
+
+def slow_job_with_cleanup(path):
+    try:
+        time.sleep(30)
+    except jobs.JobTimeoutException:
+        write_file(path, "cleaned up")
+        raise
 
 
 class TestCallablePaths:
@@ -166,13 +189,23 @@ class TestForkingWorker:
                 assert f.read() == "done"
         assert jobs.get_all_queues() == []
 
-    def test_timeout_kills_the_job(self):
+    def test_soft_timeout_stops_the_job(self):
         job = jobs.enqueue(sleep_job, [30], rq_kwargs={"timeout": 1})
+        started = time.monotonic()
+        jobs.Worker().work(burst=True)
+        assert time.monotonic() - started < 10
+        failed = jobqueue.get_backend().fetch(job.id)
+        assert failed.status == "failed"
+        assert "timed out" in failed.error
+
+    def test_hard_timeout_kills_a_stubborn_job(self, monkeypatch):
+        monkeypatch.setattr(jobs, "TIMEOUT_GRACE", 1.0)
+        job = jobs.enqueue(stubborn_job, [60], rq_kwargs={"timeout": 1})
         with recorded_logs("ckan.lib.jobs") as logs:
             started = time.monotonic()
             jobs.Worker().work(burst=True)
             assert time.monotonic() - started < 10
-        logs.assert_log("error", "timed out")
+        logs.assert_log("error", "killing it")
         failed = jobqueue.get_backend().fetch(job.id)
         assert failed.status == "failed"
         assert "timed out" in failed.error
@@ -183,6 +216,28 @@ class TestForkingWorker:
         failed = jobqueue.get_backend().fetch(job.id)
         assert failed.status == "failed"
         assert "exited" in failed.error
+
+    def test_get_current_job_inside_the_job(self):
+        assert jobs.get_current_job() is None
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "job-id.txt")
+            job = jobs.enqueue(record_current_job, [path])
+            jobs.Worker().work(burst=True)
+            with open(path) as f:
+                assert f.read() == job.id
+        assert jobs.get_current_job() is None
+
+    def test_soft_timeout_lets_the_job_clean_up(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "cleanup.txt")
+            job = jobs.enqueue(slow_job_with_cleanup, [path],
+                               rq_kwargs={"timeout": 1})
+            jobs.Worker().work(burst=True)
+            with open(path) as f:
+                assert f.read() == "cleaned up"
+        failed = jobqueue.get_backend().fetch(job.id)
+        assert failed.status == "failed"
+        assert "JobTimeoutException" in failed.error
 
     def test_exception_is_recorded(self):
         job = jobs.enqueue(resolve_callable, ["nope:nothing"])

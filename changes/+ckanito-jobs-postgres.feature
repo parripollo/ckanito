@@ -8,3 +8,6 @@ and exposes its own ``Queue`` and ``Job`` objects instead of RQ's.
 table. ``ckan.lib.kvstore`` replaces ``ckan.lib.redis`` for extensions.
 ``ckan.redis.url``, ``rq`` and ``redis`` are gone. Run ``ckan db
 upgrade`` after upgrading.
+Inside a job, ``ckan.lib.jobs.get_current_job()`` returns the running job
+and the timeout is first signalled with ``ckan.lib.jobs.JobTimeoutException``
+so the job can clean up before it is killed.
