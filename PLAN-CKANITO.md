@@ -236,6 +236,55 @@ hoy hacen `connect_to_redis()` para sus propias claves (harvest, etc).
 `ckan.lib.redis` queda como modulo deprecated que importa `redis` lazy y
 falla con mensaje claro si no esta instalado/configurado.
 
+### 1.2b Diseno detallado de la fase 3 (decidido 2026-09-08)
+
+**Jobs.** `ckan/lib/jobs.py` queda como fachada publica con los mismos
+nombres (`enqueue`, `get_queue`, `get_all_queues`, `job_from_id`,
+`dictize_job`, `Worker`, prefijos, `DEFAULT_QUEUE_NAME`) y un paquete
+nuevo `ckan/lib/jobqueue/` con el contrato `JobBackend` (`enqueue`,
+`fetch`, `delete`, `list_jobs`, `scheduled_job_ids`, `queues`, `empty`,
+`dequeue` con `FOR UPDATE SKIP LOCKED`, `mark_failed`, `finish`,
+`requeue_stale`) y el backend `postgres` (tabla `background_job`:
+id, queue con prefijo de site_id, func como `modulo:nombre`, args/kwargs
+en pickle (como RQ; JSON no soporta datetime que datastore pasa), meta
+jsonb, timeout, status queued|started|failed, scheduled_at, created_at,
+started_at, ended_at, worker, error). Objetos propios `Queue` (`name`,
+`jobs`, `job_ids`, `empty`, `delete`, `enqueue_call`, `enqueue_in`,
+`scheduled_job_registry.get_job_ids`) y `Job` (`id`, `origin`, `meta`,
+`args`, `kwargs`, `timeout`, `created_at`, `func_name`, `save`,
+`delete`, `perform`, igualdad por id) que cubren exactamente lo que core,
+datastore y tests usan de RQ, asi `ckanext/datastore` no se toca. Jobs
+terminados se borran; fallidos quedan con status failed y error. Sin
+scheduler aparte: `scheduled_at <= now()` los hace elegibles.
+
+**Worker** en `jobs.py` (el logger `ckan.lib.jobs` lo exigen los tests):
+loop de polling (1 s), colas por prioridad de izquierda a derecha,
+`burst`, `max_idle_time`, `with_scheduler` aceptado y sin efecto. Fork por
+job: antes `Session.remove()` + `engine.dispose()` + `IForkObserver`;
+hijo carga environment, ejecuta y sale con `os._exit`; padre espera con
+timeout del job (SIGKILL al vencer) y marca failed. `execute_job` (fork)
+vs `perform_job` (en proceso) para que `with_test_worker` solo tenga que
+parchear `execute_job`. Mensajes info exactos: inicio de worker, inicio
+de job, fin de job, fin de worker. Barrido de jobs `started` vencidos
+(worker muerto) en cada iteracion.
+
+**Sesiones.** `SESSION_TYPE = postgres` con
+`CKANPostgresSessionInterface(ServerSideSessionInterface)` de
+flask-session sobre tabla `session_store` (id, data bytea, expiry). El
+default sigue siendo `cookie`. `redis` desaparece de
+`common_middleware.py`.
+
+**Key-value.** `ckan/lib/kvstore.py` (`get`, `set` con ttl, `delete`,
+`keys(pattern)`, `incr`) sobre tabla `kv_store` (key, value jsonb,
+expires_at), reemplazo sancionado de `connect_to_redis` para extensiones
+y para las fixtures `reset_redis`/`clean_redis`, que pasan a
+`reset_kvstore`/`clean_kvstore` (los nombres viejos quedan como alias).
+
+**Eliminaciones.** `ckan/lib/redis.py`, `ckan.redis.url`,
+`CKAN_REDIS_URL`, ping de Redis en `environment.py`, `rq` y `redis` de
+requirements, servicios Redis de CI/docker/cookiecutter. Una sola
+migracion 111 crea las tres tablas.
+
 ### 1.3 Migracion CKAN -> CKANito
 
 - Mismo esquema de DB mas 4 tablas nuevas (search index, background_job,

@@ -28,8 +28,6 @@ Host ports requirements:
     +------------+------------+-----------+
     | PostgreSQL | 5432       | Database  |
     +------------+------------+-----------+
-    | Redis      | 6379       | Search    |
-    +------------+------------+-----------+
 
 
 .. _run-package-installer:
@@ -48,7 +46,7 @@ CKAN:
 
 #. Install the Ubuntu packages that CKAN requires (and 'git', to enable you to install CKAN extensions)::
 
-    sudo apt install -y libpq5 redis-server nginx supervisor
+    sudo apt install -y libpq5 nginx supervisor
 
 #. Download the CKAN package:
 

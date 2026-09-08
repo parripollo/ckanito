@@ -7,10 +7,8 @@ Tests for ``ckan.lib.jobs``.
 import datetime
 
 import pytest
-import rq
 
 import ckan.lib.jobs as jobs
-from ckan.lib.redis import connect_to_redis
 from ckan.common import config
 from ckan.logic import NotFound
 from ckan import model
@@ -41,7 +39,7 @@ class TestQueueNamePrefixes(RQTestBase):
 class TestEnqueue(RQTestBase):
     def test_enqueue_return_value(self):
         job = self.enqueue()
-        assert isinstance(job, rq.job.Job)
+        assert isinstance(job, jobs.Job)
 
     def test_enqueue_args(self):
         self.enqueue()
@@ -103,7 +101,7 @@ class TestGetAllQueues(RQTestBase):
         with changed_config(u"ckan.site_id", u"some-other-ckan-instance"):
             self.enqueue(queue=u"q2")
         # Create queue not related to CKAN
-        rq.Queue(u"q4", connection=connect_to_redis()).enqueue_call(jobs.test_job)
+        jobs.Queue(u"q4").enqueue_call(jobs.test_job)
         all_queues = jobs.get_all_queues()
         names = {jobs.remove_queue_name_prefix(q.name) for q in all_queues}
         assert names == {u"q1", u"q2"}

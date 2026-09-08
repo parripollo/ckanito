@@ -130,8 +130,6 @@ jobs:
         env:
           POSTGRES_USER: ckan
           POSTGRES_PASSWORD: ckan
-      ckan-redis:
-        image: redis:7
 
     env:
       SPLIT_COUNT: ${{ needs.define-matrix.outputs.SPLIT_COUNT }}

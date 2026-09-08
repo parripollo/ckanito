@@ -17,7 +17,6 @@ import ckan.plugins as p
 import ckan.lib.plugins as lib_plugins
 import ckan.lib.helpers as helpers
 import ckan.lib.app_globals as app_globals
-from ckan.lib.redis import is_redis_available
 import ckan.lib.search as search
 import ckan.logic as logic
 import ckan.authz as authz
@@ -68,9 +67,6 @@ def load_environment(conf: Union[Config, CKANConfig]):
     # load all CKAN plugins and force call to environment.update_config()
     p.load_all(force_update=True)
 
-    # Check Redis availability
-    if not is_redis_available():
-        log.critical('Could not connect to Redis.')
 
     app_globals.reset()
 
@@ -82,7 +78,6 @@ CONFIG_FROM_ENV_VARS: dict[str, str] = {
     'sqlalchemy.url': 'CKAN_SQLALCHEMY_URL',
     'ckan.datastore.write_url': 'CKAN_DATASTORE_WRITE_URL',
     'ckan.datastore.read_url': 'CKAN_DATASTORE_READ_URL',
-    'ckan.redis.url': 'CKAN_REDIS_URL',
     'ckan.site_id': 'CKAN_SITE_ID',
     'ckan.site_url': 'CKAN_SITE_URL',
     'ckan.storage_path': 'CKAN_STORAGE_PATH',

@@ -29,6 +29,16 @@ modifies, so that merge conflicts can be resolved quickly.
   - creates the table and the `ckan_english` text search configuration
   (English stemming, no stop words, like the Solr schema).
 - `ckan/cli/ckanito.py` - `ckan ckanito seed-demo`.
+- `ckan/lib/jobqueue/__init__.py`, `base.py`, `postgres.py` - background
+  jobs contract (`JobBackend`, `Job`), registry (`ckan.jobs.backend`) and
+  the PostgreSQL backend on the `background_job` table (claims with
+  `FOR UPDATE SKIP LOCKED`, delayed jobs by `scheduled_at`).
+- `ckan/lib/kvstore.py` - key/value store on the `kv_store` table
+  (replacement for the raw Redis connection extensions used).
+- `ckan/model/background_job.py` - `background_job`, `session_store` and
+  `kv_store` tables; migration
+  `111_d2b4f6a8c0e1_create_background_job_session_kv_tables.py`.
+- `ckan/tests/lib/test_jobqueue.py`, `ckan/tests/lib/test_kvstore.py`.
 - `ckan/tests/lib/search/test_backends.py`,
   `ckan/tests/lib/search/postgres/test_lucene.py`.
 
@@ -44,6 +54,11 @@ modifies, so that merge conflicts can be resolved quickly.
   (unknown options in an existing `ckan.ini` are ignored with a warning).
   Env var `CKAN_SOLR_URL` is no longer mapped.
 
+- `ckan/lib/redis.py`; `rq` and `redis` from the requirements; Redis
+  services from the workflows, docker-compose files and the cookiecutter;
+  `ckan.redis.url` option and `CKAN_REDIS_URL` env var; the Redis ping at
+  startup.
+
 ## Upstream files modified
 
 | file | what changed | why |
@@ -58,4 +73,11 @@ modifies, so that merge conflicts can be resolved quickly.
 | `ckan/config/config_declaration.yaml` | `ckan.search.backend` (default `postgres`) and `ckan.search.postgres.text_config` added before `solr_url`. | Backend selection. |
 | `ckan/model/__init__.py` | imports `package_search_index_table` so `create_all` / `drop_all` handle it. | Index table lives in the CKAN database. |
 | `setup.cfg` | `ckanito` entry in `ckan.click_command`. | Registers `ckan ckanito`. |
+| `ckan/lib/jobs.py` | rewritten on top of `ckan.lib.jobqueue`: same public functions, plus own `Queue`/`Job` objects exposing what core, datastore and tests used from RQ (`enqueue_call`, `enqueue_in`, `fetch_job`, `scheduled_job_registry`, `job.meta`, `job.delete()`...); `Worker` polls the backend and forks a child per job, enforcing the timeout with a kill. | No Redis / RQ. `ckanext/datastore` needs no change. |
+| `ckan/config/middleware/common_middleware.py`, `flask_app.py` | `CKANRedisSessionInterface` replaced by `CKANPostgresSessionInterface` (`SESSION_TYPE = postgres`, table `session_store`). | Server side sessions without Redis. |
+| `ckan/plugins/interfaces.py` | `IJobBackend` appended. | Lets extensions register job backends. |
+| `ckan/config/config_declaration.yaml` | `ckan.jobs.backend` added; `ckan.redis.url` removed; `SESSION_TYPE` docs. | Same. |
+| `ckan/types/__init__.py` | `FixtureResetKVStore` (old name kept as alias). | Fixture typing. |
+| `ckan/tests/pytest_ckan/fixtures.py`, `ckan/tests/helpers.py` | `reset_queues`/`clean_queues` use the job backend; `reset_redis`/`clean_redis` become `reset_kvstore`/`clean_kvstore` (old names kept as aliases); `with_test_worker` patches `Worker.execute_job`; `RQTestBase.all_jobs` uses `get_all_queues`. | Test infrastructure without Redis; third party extension tests keep working. |
+| `ckan/tests/lib/test_jobs.py`, `ckan/tests/pytest_ckan/test_fixtures.py`, `ckan/tests/config/test_sessions.py` | RQ/Redis specifics replaced (own `Job` class, foreign queue via `jobs.Queue`, kvstore fixtures, `postgres` session type). | Same. |
 | `ckan/tests/lib/search/test_index.py`, `test_search.py`, `test_query.py`, `ckan/tests/cli/test_db.py`, `ckan/tests/controllers/test_api.py`, `test_package.py` | tests that reached into pysolr now go through the backend interface or a stub backend; Solr-only tests (schema XML version, local params) removed; one test made deterministic; a malformed query now yields a 400 instead of a generic error page. | Tests must not depend on a particular engine. |

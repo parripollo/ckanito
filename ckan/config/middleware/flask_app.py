@@ -41,7 +41,7 @@ from ckan.common import config, g, request, ungettext
 from ckan.config.middleware.common_middleware import (
     RootPathMiddleware,
     CKANSecureCookieSessionInterface,
-    CKANRedisSessionInterface,
+    CKANPostgresSessionInterface,
 )
 import ckan.lib.api_token as api_token
 import ckan.lib.app_globals as app_globals
@@ -176,7 +176,7 @@ class CKANSession(Session):
 
         We use our own classes for these interfaces:
             * cookie: to support persistent sessions
-            * redis: to be able use the value of ckan.redis.url
+            * postgres: sessions stored in the CKAN database
 
         In addition, all flask-session backends(any backend other from
         `cookie`) have their MsgPack serializer replaced with flask's
@@ -187,8 +187,8 @@ class CKANSession(Session):
         if session_type == "cookie":
             return CKANSecureCookieSessionInterface(app)
 
-        if session_type == "redis":
-            interface = CKANRedisSessionInterface(app)
+        if session_type == "postgres":
+            interface = CKANPostgresSessionInterface(app)
         else:
             interface = super()._get_interface(app)
 

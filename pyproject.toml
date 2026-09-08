@@ -145,7 +145,6 @@ module = [
     "flask_multistatic.*",
     "passlib.*",
     "repoze.*",
-    "rq.*",
     "webassets.*",
     "zope.*",
 ]

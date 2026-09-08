@@ -35,12 +35,10 @@ from flask.wrappers import Response
 from click.testing import CliRunner
 import pytest
 import unittest.mock as mock
-import rq
 from sqlalchemy.orm import close_all_sessions
 
 from ckan.common import config
 import ckan.lib.jobs as jobs
-from ckan.lib.redis import connect_to_redis
 import ckan.lib.search as search
 import ckan.config.middleware
 import ckan.model as model
@@ -393,11 +391,10 @@ class RQTestBase(object):
         u"""
         Get a list of all RQ jobs.
         """
-        jobs = []
-        redis_conn = connect_to_redis()
-        for queue in rq.Queue.all(connection=redis_conn):
-            jobs.extend(queue.jobs)
-        return jobs
+        all_jobs = []
+        for queue in jobs.get_all_queues():
+            all_jobs.extend(queue.jobs)
+        return all_jobs
 
     def enqueue(self, job=None, *args, **kwargs):
         u"""

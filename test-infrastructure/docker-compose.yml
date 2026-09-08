@@ -12,11 +12,6 @@ services:
       POSTGRES_USER: ckan
       POSTGRES_PASSWORD: ckan
 
-  ckan-redis:
-    networks:
-      - default
-    image: "redis:7"
-
   ckan:
     image: python:3.10-bookworm
     networks:

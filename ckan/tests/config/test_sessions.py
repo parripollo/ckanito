@@ -7,7 +7,6 @@ from flask import Blueprint, render_template
 import ckan.lib.helpers as h
 import ckan.plugins as p
 from ckan.config.middleware.flask_app import CKANJsonSessionSerializer
-from ckan.lib.redis import connect_to_redis
 from ckan import common as c
 from ckan.tests.helpers import body_contains, CKANTestApp
 from ckan.views.user import rotate_token
@@ -24,7 +23,7 @@ class TestWithFlashPlugin:
         assert body_contains(res, "This is a success message")
         assert body_contains(res, 'alert-success')
 
-    @pytest.mark.parametrize("session_type", ["cookie", "redis"])
+    @pytest.mark.parametrize("session_type", ["cookie", "postgres"])
     def test_flash_success_with_html(
             self, make_app, session_type, ckan_config, monkeypatch,
     ):
@@ -98,23 +97,29 @@ class FlashMessagePlugin(p.SingletonPlugin):
 
 
 class TestSessionTypes:
-    @pytest.mark.usefixtures("clean_redis")
-    @pytest.mark.ckan_config("SESSION_TYPE", "redis")
-    def test_redis_storage(self, app: CKANTestApp, monkeypatch):
-        """Redis session interface creates a record in redis upon request.
+    @pytest.mark.usefixtures("clean_db")
+    @pytest.mark.ckan_config("SESSION_TYPE", "postgres")
+    def test_postgres_storage(self, app: CKANTestApp, monkeypatch):
+        """Postgres session interface creates a row upon request.
         """
-        redis = connect_to_redis()
+        import sqlalchemy as sa
+        import ckan.model as model
 
-        assert not redis.keys("*")
+        def stored_ids():
+            with model.meta.engine.connect() as conn:  # type: ignore
+                return [row[0] for row in conn.execute(
+                    sa.text("SELECT id FROM session_store"))]
+
+        assert not stored_ids()
         response = app.get("/")
 
         cookie = re.match(r'ckan=([^;]+)', response.headers['set-cookie'])
         assert cookie
 
-        assert redis.keys("*") == [f"session:{cookie.group(1)}".encode()]
+        assert stored_ids() == [f"session:{cookie.group(1)}"]
 
-    @pytest.mark.ckan_config("SESSION_TYPE", "redis")
-    def test_redis_session_fixation(self, app: CKANTestApp, monkeypatch, user_factory, faker):
+    @pytest.mark.ckan_config("SESSION_TYPE", "postgres")
+    def test_postgres_session_fixation(self, app: CKANTestApp, monkeypatch, user_factory, faker):
         """Session id is regenerated on login
         """
 
@@ -167,7 +172,7 @@ class TestSessionTypes:
         assert data["_user_id"] == user["id"]
 
 
-@pytest.mark.ckan_config("SESSION_TYPE", "redis")
+@pytest.mark.ckan_config("SESSION_TYPE", "postgres")
 class TestCKANJsonSessionSerializer:
     def test_encode_returns_bytes(self, app: CKANTestApp):
         with app.flask_app.test_request_context():

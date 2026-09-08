@@ -40,7 +40,7 @@ Set up the testing environment
    ./setup.sh
 
 This starts a docker compose environment with the supporting postgres
-and redis containers from the GitHub Actions test environment. The
+container from the GitHub Actions test environment. The
 databases are initialized, and the current ckan is installed into a
 python container.
 
@@ -112,8 +112,6 @@ When the tests run they will use these databases, because in ``test-core.ini``
 they are specified in the ``sqlalchemy.url`` and ``ckan.datastore.write_url``
 connection strings.
 
-You should also make sure that the :ref:`Redis database <ckan.redis.url>`
-configured in ``test-core.ini`` is different from your production database.
 
 
 

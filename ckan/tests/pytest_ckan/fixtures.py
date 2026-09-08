@@ -35,7 +35,6 @@ from typing import Any, IO, cast
 from unittest import mock
 from collections.abc import Iterable, Callable
 import pytest
-import rq
 
 from werkzeug.datastructures import FileStorage as FlaskFileStorage
 from pytest_factoryboy import register
@@ -48,7 +47,9 @@ import ckan.cli
 import ckan.model as model
 from ckan import types
 from ckan.common import config
-from ckan.lib import redis, search, files
+from ckan.lib import search, files
+import ckan.lib.jobqueue as jobqueue
+import ckan.lib.kvstore as kvstore
 
 
 @register
@@ -257,11 +258,7 @@ def reset_index():
 
 
 def _empty_queues():
-
-    conn = redis.connect_to_redis()
-    for queue in rq.Queue.all(connection=conn):
-        queue.empty()
-        queue.delete()
+    jobqueue.get_backend().clear_all()
 
 
 @pytest.fixture(scope=u"session")
@@ -274,72 +271,55 @@ def reset_queues():
 
 
 @pytest.fixture(scope="session")
-def reset_redis():
-    """Callable for removing all keys from Redis.
+def reset_kvstore():
+    """Callable for removing keys from the key/value store.
 
-    Accepts redis key-pattern for narrowing down the list of items to
-    remove. By default removes everything.
+    Accepts a glob pattern for narrowing down the list of keys to
+    remove. By default removes everything::
 
-    This fixture removes all the records from Redis on call::
+        def test_store_is_empty(reset_kvstore):
+            kvstore.set("AAA-1", 1)
+            kvstore.set("BBB-3", 3)
 
-        def test_redis_is_empty(reset_redis):
-            redis = connect_to_redis()
-            redis.set("test", "test")
-
-            reset_redis()
-            assert not redis.get("test")
-
-    If only specific records require removal, pass a pattern to the fixture::
-
-        def test_redis_is_empty(reset_redis):
-            redis = connect_to_redis()
-            redis.set("AAA-1", 1)
-            redis.set("AAA-2", 2)
-            redis.set("BBB-3", 3)
-
-            reset_redis("AAA-*")
-            assert not redis.get("AAA-1")
-            assert not redis.get("AAA-2")
-
-            assert redis.get("BBB-3") is not None
+            reset_kvstore("AAA-*")
+            assert kvstore.get("AAA-1") is None
+            assert kvstore.get("BBB-3") == 3
 
     """
     def cleaner(pattern: str = "*") -> int:
-        """Remove keys matching pattern.
-
-        Return number of removed records.
-        """
-        conn = redis.connect_to_redis()
-        keys = conn.keys(pattern)
-        if keys:
-            return conn.delete(*keys)  # type: ignore
-        return 0
+        """Remove keys matching pattern. Return number of removed keys."""
+        return kvstore.clear(pattern)
 
     return cleaner
 
 
+@pytest.fixture(scope="session")
+def reset_redis(reset_kvstore: types.FixtureResetKVStore):
+    """Deprecated alias of ``reset_kvstore`` (CKAN has no Redis)."""
+    return reset_kvstore
+
+
 @pytest.fixture()
-def clean_redis(reset_redis: types.FixtureResetRedis):
-    """Remove all keys from Redis.
+def clean_kvstore(reset_kvstore: types.FixtureResetKVStore):
+    """Remove all keys from the key/value store.
 
-    This fixture removes all the records from Redis::
-
-        @pytest.mark.usefixtures("clean_redis")
-        def test_redis_is_empty():
-            assert redis.keys("*") == []
-
-    If test requires presence of some initial data in redis, make sure that
-    data producer applied **after** ``clean_redis``::
+    If a test requires presence of some initial data in the store, make
+    sure that the data producer is applied **after** ``clean_kvstore``::
 
         @pytest.mark.usefixtures(
-            "clean_redis",
-            "fixture_that_adds_xxx_key_to_redis"
+            "clean_kvstore",
+            "fixture_that_adds_xxx_key"
         )
-        def test_redis_has_one_record():
-            assert redis.keys("*") == [b"xxx"]
+        def test_store_has_one_record():
+            assert kvstore.keys("*") == ["xxx"]
 
     """
-    reset_redis()
+    reset_kvstore()
+
+
+@pytest.fixture()
+def clean_redis(clean_kvstore: None):
+    """Deprecated alias of ``clean_kvstore`` (CKAN has no Redis)."""
 
 
 @pytest.fixture
@@ -598,12 +578,11 @@ def mail_server(monkeypatch: pytest.MonkeyPatch):
 def with_test_worker(monkeypatch: pytest.MonkeyPatch):
     """Worker that doesn't create forks.
     """
+    import ckan.lib.jobs as jobs
+
     monkeypatch.setattr(
-        rq.Worker, u"main_work_horse", rq.SimpleWorker.main_work_horse
-    )
-    monkeypatch.setattr(
-        rq.Worker, u"execute_job", rq.SimpleWorker.execute_job
-    )
+        jobs.Worker, u"execute_job",
+        lambda self, job: self.perform_job(job))
     yield
 
 

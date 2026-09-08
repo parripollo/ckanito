@@ -313,12 +313,14 @@ groups:
         description: |
             Specifies which type of session interface to use. The default
             ``cookie`` value stores the session data inside a JSON-serialized signed
-            cookie. Alternatively, this can be set to any of the types
-            supported by `Flask-Session
+            cookie. ``postgres`` stores the session data server side in
+            the ``session_store`` table of the CKAN database. Alternatively,
+            this can be set to any of the types supported by `Flask-Session
             <https://flask-session.readthedocs.io/en/latest/config.html#SESSION_TYPE>`_
-            like ``redis``, ``filesystem``, etc. Keep in mind
-            that certain session types require additional Python packages and configuration settings.
-            Setting a not supported value will raise an exception on startup.
+            like ``filesystem``, etc. Keep in mind that certain session
+            types require additional Python packages and configuration
+            settings. Setting a not supported value will raise an exception
+            on startup.
 
       - key: SESSION_COOKIE_NAME
         flask: true
@@ -1034,14 +1036,6 @@ groups:
 
           * ``group_list``'s ``limit`` when ``all_fields=true``
           * ``organization_list``'s ``limit`` when ``all_fields=true``
-
-  - annotation: Redis Settings
-    options:
-      - key: ckan.redis.url
-        default: redis://localhost:6379/0
-        validators: not_empty
-        example: redis://localhost:7000/1
-        description: URL to your Redis instance, including the database to be used.
 
   - annotation: CORS Settings
     options:
@@ -1957,6 +1951,18 @@ groups:
 
   - annotation: Background Job Settings
     options:
+      - key: ckan.jobs.backend
+        default: postgres
+        example: mymodule.jobs:MyBackend
+        description: |
+          Storage of the background jobs queue. The built-in ``postgres``
+          backend keeps the jobs in the ``background_job`` table of the
+          CKAN database, so no extra service is needed; workers
+          (``ckan jobs worker``) poll it. Extensions can register other
+          backends through the ``IJobBackend`` plugin interface, and a
+          dotted path to a ``JobBackend`` subclass
+          (``package.module:ClassName``) is also accepted.
+
       - key: ckan.jobs.timeout
         type: int
         default: 180

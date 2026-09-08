@@ -6,8 +6,6 @@
 #
 alembic==1.18.5
     # via -r requirements.in
-async-timeout==5.0.1
-    # via redis
 babel==2.18.0
     # via
     #   -r requirements.in
@@ -28,7 +26,6 @@ click==8.4.2
     # via
     #   -r requirements.in
     #   flask
-    #   rq
 croniter==6.2.3
     # via rq
 dominate==2.9.1
@@ -117,11 +114,7 @@ pyyaml==6.0.3
     # via
     #   -r requirements.in
     #   webassets
-redis==8.0.1
-    # via rq
 requests==2.34.2
-    # via -r requirements.in
-rq==2.10.0
     # via -r requirements.in
 simplejson==4.1.1
     # via -r requirements.in

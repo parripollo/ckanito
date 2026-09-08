@@ -71,6 +71,7 @@ __all__ = [
     "IPermissionLabels",
     "IForkObserver",
     "ISearchBackend",
+    "IJobBackend",
     "IApiToken",
     "IClick",
     "ISignal",
@@ -2546,6 +2547,27 @@ class ISearchBackend(Interface):
         Return a mapping of backend name to backend class.
 
         :returns: ``{name: SearchBackend subclass}``
+        :rtype: dict
+        '''
+        return {}
+
+
+class IJobBackend(Interface):
+    u'''
+    Register additional background job backends.
+
+    A job backend is a subclass of
+    :class:`ckan.lib.jobqueue.base.JobBackend` that stores and hands out
+    background jobs. The backend in use is chosen with the
+    ``ckan.jobs.backend`` config option, which accepts any of the names
+    returned by this interface.
+    '''
+
+    def register_job_backends(self) -> dict[str, type]:
+        u'''
+        Return a mapping of backend name to backend class.
+
+        :returns: ``{name: JobBackend subclass}``
         :rtype: dict
         '''
         return {}

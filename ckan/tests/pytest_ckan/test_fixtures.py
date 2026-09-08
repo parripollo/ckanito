@@ -5,7 +5,7 @@ import ckan.plugins as plugins
 from ckan.common import config, asbool
 from ckan.tests import factories
 from ckan.lib import files
-from ckan.lib.redis import connect_to_redis
+import ckan.lib.kvstore as kvstore
 from ckan.model.base import BaseModel
 
 
@@ -182,42 +182,44 @@ def test_non_clean_db_does_not_fail(package_factory):
     assert package_factory()
 
 
-class TestRedisFixtures:
+class TestKVStoreFixtures:
 
     @pytest.fixture()
-    def add_redis_record(self, redis, faker):
-        """Create a random record in Redis."""
-        redis.set(faker.word(), faker.word())
+    def add_record(self, faker):
+        """Create a random record in the store."""
+        kvstore.set(faker.word(), faker.word())
 
-    @pytest.fixture()
-    def redis(self):
-        """Return Redis client."""
-        return connect_to_redis()
+    @pytest.mark.usefixtures("add_record", "clean_kvstore")
+    def test_clean_kvstore_after_adding_record(self):
+        """clean_kvstore fixture removes everything from the store."""
+        assert kvstore.keys("*") == []
 
-    @pytest.mark.usefixtures("add_redis_record", "clean_redis")
-    def test_clean_redis_after_adding_record(self, redis):
-        """clean_redis fixture removes everything from redis."""
-        assert redis.keys("*") == []
+    @pytest.mark.usefixtures("clean_kvstore", "add_record")
+    def test_clean_kvstore_before_adding_record(self):
+        """It's possible to add data to the store after cleaning."""
+        assert len(kvstore.keys("*")) == 1
 
-    @pytest.mark.usefixtures("clean_redis", "add_redis_record")
-    def test_clean_redis_before_adding_record(self, redis):
-        """It's possible to add data to redis after cleaning."""
-        assert len(redis.keys("*")) == 1
+    def test_reset_kvstore(self, reset_kvstore):
+        """reset_kvstore can be used for removing records multiple times."""
+        kvstore.set("AAA-1", 1)
+        kvstore.set("AAA-2", 2)
+        kvstore.set("BBB-3", 3)
 
-    def test_reset_redis(self, redis, reset_redis):
-        """reset_redis can be used for removing records multiple times."""
-        redis.set("AAA-1", 1)
-        redis.set("AAA-2", 2)
-        redis.set("BBB-3", 3)
+        reset_kvstore("AAA-*")
+        assert kvstore.get("AAA-1") is None
+        assert kvstore.get("AAA-2") is None
 
-        reset_redis("AAA-*")
-        assert not redis.get("AAA-1")
-        assert not redis.get("AAA-2")
+        assert kvstore.get("BBB-3") == 3
 
-        assert redis.get("BBB-3")
+        reset_kvstore()
+        assert kvstore.get("BBB-3") is None
 
+    @pytest.mark.usefixtures("clean_redis")
+    def test_deprecated_redis_aliases(self, reset_redis):
+        """The old fixture names keep working."""
+        kvstore.set("x", 1)
         reset_redis()
-        assert not redis.get("BBB-3")
+        assert kvstore.keys("*") == []
 
 
 class CustomTestModel(BaseModel):

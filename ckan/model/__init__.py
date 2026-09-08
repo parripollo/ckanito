@@ -108,6 +108,11 @@ from ckan.model.api_token import (
 from ckan.model.package_search_index import (
     package_search_index_table,
 )
+from ckan.model.background_job import (
+    background_job_table,
+    session_store_table,
+    kv_store_table,
+)
 from ckan.model.file import File
 from ckan.model.file_owner import FileOwner, FileOwnerTransferHistory
 
@@ -136,6 +141,7 @@ __all__ = [
     "repo", "is_id", "parse_db_config",
     "File", "FileOwner", "FileOwnerTransferHistory",
     "package_search_index_table",
+    "background_job_table", "session_store_table", "kv_store_table",
 ]
 
 log = logging.getLogger(__name__)

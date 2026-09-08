@@ -4,9 +4,9 @@
 Installing CKAN from source
 ===========================
 
-CKAN is a Python application that requires PostgreSQL (and, for background
-jobs, Redis). Search runs inside PostgreSQL: there is no separate search
-engine to install.
+CKAN is a Python application that requires one service: PostgreSQL.
+Search, background jobs and sessions all run inside PostgreSQL, so there
+is no search engine, message broker or cache server to install.
 
 This section describes how to install CKAN from source. Although
 :doc:`install-from-package` is simpler, it requires Ubuntu 20.04 64-bit or
@@ -28,7 +28,7 @@ work on CKAN.
 If you're using a Debian-based operating system (such as Ubuntu) install the
 required packages with this command::
 
-    sudo apt-get install python3-dev libpq-dev python3-pip python3-venv git-core redis-server libmagic1
+    sudo apt-get install python3-dev libpq-dev python3-pip python3-venv git-core libmagic1
 
 If you're not using a Debian-based operating system, find the best way to
 install the following packages on your operating system (see
@@ -44,7 +44,6 @@ libpq                  `The C programmer's interface to PostgreSQL <http://www.p
 pip                    `A tool for installing and managing Python packages <https://pip.pypa.io/en/stable/>`_
 python3-venv           `The Python3 virtual environment builder (or for Python 2 use 'virtualenv' instead) <https://virtualenv.pypa.io/en/latest/>`_
 Git                    `A distributed version control system <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_
-Redis                  `An in-memory data structure store <https://redis.io/>`_
 =====================  ===============================================
 
 
@@ -212,17 +211,14 @@ Nothing to install: CKAN indexes datasets in its own PostgreSQL database
 
 .. _postgres-init:
 
----------------
-6. Setup Redis
----------------
+-------------------------
+6. Setup background jobs
+-------------------------
 
-If you installed it locally on the first step, make sure you have a Redis
-instance running in the `6379` port.
-
-If you have Docker installed, you can setup a default Redis instance by
-running::
-
-    docker run --name ckan-redis -p 6379:6379 -d redis
+Background jobs are queued in the CKAN database and run by worker
+processes; see :doc:`/maintaining/background-tasks`. Nothing to install
+now: once the database is created, start a worker with ``ckan jobs
+worker`` (usually under Supervisor).
 
 -------------------------
 7. Create database tables

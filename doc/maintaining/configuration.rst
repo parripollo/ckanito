@@ -451,13 +451,15 @@ level ini file.
 
 .. _solr_url:
 .. _ckan.search.solr_allowed_query_parsers:
+.. _ckan.redis.url:
 
 Options removed in CKANito
 --------------------------
 
-CKANito has no Solr, so ``solr_url``, ``solr_user``, ``solr_password``,
-``solr_timeout``, ``ckan.search.solr_commit`` and
-``ckan.search.solr_allowed_query_parsers`` do not exist any more. They are
-ignored (with a warning) if they are still present in an existing
-configuration file. Search is configured with :ref:`ckan.search.backend`
-and :ref:`ckan.search.postgres.text_config`.
+CKANito has no Solr and no Redis, so ``solr_url``, ``solr_user``,
+``solr_password``, ``solr_timeout``, ``ckan.search.solr_commit``,
+``ckan.search.solr_allowed_query_parsers`` and ``ckan.redis.url`` do not
+exist any more. They are ignored (with a warning) if they are still
+present in an existing configuration file. Search is configured with
+:ref:`ckan.search.backend` and :ref:`ckan.search.postgres.text_config`,
+background jobs with :ref:`ckan.jobs.backend`.

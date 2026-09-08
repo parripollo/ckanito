@@ -1,13 +1,15 @@
 """Additional middleware used by the Flask app stack."""
 from __future__ import annotations
 
-from typing import Any
+import datetime
+from typing import Any, Optional
 
+import sqlalchemy as sa
 from flask.sessions import SecureCookieSessionInterface
-from flask_session.redis import RedisSessionInterface
+from flask_session.base import ServerSideSession, ServerSideSessionInterface
 
 from ckan.types import CKANApp, Request
-from ckan.lib.redis import connect_to_redis
+import ckan.model as model
 
 
 class RootPathMiddleware(object):
@@ -53,21 +55,57 @@ class CKANSecureCookieSessionInterface(SecureCookieSessionInterface):
         return session
 
 
-class CKANRedisSessionInterface(RedisSessionInterface):
-    """Flask-Session redis-based sessions with CKAN's Redis connection.
+class CKANPostgresSessionInterface(ServerSideSessionInterface):
+    """Flask-Session server side sessions stored in the CKAN database.
 
-    Parent class connects to Redis instance running on localhost:6379. This
-    class initializes session with the connection to the Redis instance
-    configured by `ckan.redis.url` option.
-
+    Session data lives in the ``session_store`` table, keyed by the
+    prefixed session id and expiring with ``PERMANENT_SESSION_LIFETIME``.
+    Expired rows are removed whenever a session is written.
     """
 
+    table = "session_store"
+
     def __init__(self, app: CKANApp):
-        app.config.setdefault("SESSION_REDIS", connect_to_redis())
-        return super().__init__(
+        super().__init__(
             app,
-            app.config["SESSION_REDIS"],
             app.config["SESSION_KEY_PREFIX"],
             app.config["SESSION_USE_SIGNER"],
-            app.config["SESSION_PERMANENT"]
+            app.config["SESSION_PERMANENT"],
         )
+
+    def _execute(self, sql: str, **params: Any) -> Any:
+        engine = model.meta.engine
+        assert engine is not None, "The database engine is not ready"
+        with engine.begin() as conn:
+            result = conn.execute(sa.text(sql), params)
+            if result.returns_rows:
+                return result.mappings().all()
+            return result.rowcount
+
+    def _retrieve_session_data(
+            self, store_id: str) -> Optional[dict[str, Any]]:
+        rows = self._execute(
+            "SELECT data FROM %s WHERE id = :id AND "
+            "(expiry IS NULL OR expiry > :now)" % self.table,
+            id=store_id, now=datetime.datetime.utcnow())
+        if not rows:
+            return None
+        assert self.serializer
+        return self.serializer.decode(bytes(rows[0]["data"]))
+
+    def _delete_session(self, store_id: str) -> None:
+        self._execute("DELETE FROM %s WHERE id = :id" % self.table,
+                      id=store_id)
+
+    def _upsert_session(self, session_lifetime: datetime.timedelta,
+                        session: ServerSideSession, store_id: str) -> None:
+        now = datetime.datetime.utcnow()
+        assert self.serializer
+        self._execute(
+            "INSERT INTO %s (id, data, expiry) VALUES (:id, :data, :expiry) "
+            "ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, "
+            "expiry = EXCLUDED.expiry" % self.table,
+            id=store_id, data=self.serializer.encode(session),
+            expiry=now + session_lifetime)
+        self._execute("DELETE FROM %s WHERE expiry IS NOT NULL AND "
+                      "expiry <= :now" % self.table, now=now)
