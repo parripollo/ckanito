@@ -272,8 +272,8 @@ class TestResourceQuery(object):
         assert result["count"] == 1, result
 
 
-def test_convert_legacy_params_to_solr():
-    convert = search.convert_legacy_parameters_to_solr
+def test_convert_legacy_params():
+    convert = search.convert_legacy_parameters
     assert convert({"title": "bob"}) == {"q": "title:bob"}
     assert convert({"title": "bob", "fl": "name"}) == {
         "q": "title:bob",

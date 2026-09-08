@@ -196,7 +196,7 @@ site_url
 
   Do not add a trailing slash to the URL.
 
-.. _setting up solr:
+.. _setting up the search index:
 
 --------------------------
 5. Setup the search index

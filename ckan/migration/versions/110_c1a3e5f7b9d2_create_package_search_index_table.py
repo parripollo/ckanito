@@ -18,7 +18,7 @@ depends_on = None
 
 
 def upgrade():
-    # English stemming without stop words, like CKAN's Solr schema. Text
+    # English stemming without stop words, like CKAN always searched. Text
     # search objects have no IF NOT EXISTS, so check the catalog first.
     op.execute("""
         DO $$

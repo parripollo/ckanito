@@ -1,0 +1,6 @@
+Names that referred to Solr are gone: ``SolrConnectionError`` is now
+``SearchConnectionError``, ``check_solr_schema_version`` is
+``check_schema``, ``convert_legacy_parameters_to_solr`` is
+``convert_legacy_parameters``, ``solr_literal`` is ``search_literal``,
+``VALID_SOLR_PARAMETERS`` is ``VALID_SEARCH_PARAMETERS`` and
+``make_connection`` has been removed. No compatibility aliases are kept.

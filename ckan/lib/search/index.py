@@ -28,8 +28,8 @@ TYPE_FIELD = "entity_type"
 PACKAGE_TYPE = "package"
 KEY_CHARS = string.digits + string.ascii_letters + "_-"
 
-SOLR_FIELDS = [TYPE_FIELD, "res_url", "text", "urls", "indexed_ts", "site_id"]
-RESERVED_FIELDS = SOLR_FIELDS + ["tags", "groups", "res_name", "res_description",
+INDEX_FIELDS = [TYPE_FIELD, "res_url", "text", "urls", "indexed_ts", "site_id"]
+RESERVED_FIELDS = INDEX_FIELDS + ["tags", "groups", "res_name", "res_description",
                                  "res_format", "res_url", "res_type"]
 
 # Regular expression used to strip invalid XML characters
@@ -226,9 +226,7 @@ class PackageSearchIndex(SearchIndex):
             if k in pkg_dict and pkg_dict[k]:
                 pkg_dict[k] = escape_xml_illegal_chars(pkg_dict[k])
 
-        # modify dates (SOLR is quite picky with dates, and only accepts ISO dates
-        # with UTC time (i.e trailing Z)
-        # See http://lucene.apache.org/solr/api/org/apache/solr/schema/DateField.html
+        # normalize dates: the index gets ISO dates in UTC (trailing Z)
         pkg_dict['metadata_created'] += 'Z'
         pkg_dict['metadata_modified'] += 'Z'
 
@@ -237,7 +235,7 @@ class PackageSearchIndex(SearchIndex):
 
         # Strip a selection of the fields.
         # These fields are possible candidates for sorting search results on,
-        # so we strip leading spaces because solr will sort " " before "a" or "A".
+        # so we strip leading spaces because " " would sort before "a" or "A".
         for field_name in ['title']:
             try:
                 value = pkg_dict.get(field_name)

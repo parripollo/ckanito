@@ -1469,12 +1469,10 @@ class TestPackageSearch(object):
         with pytest.raises(SearchError):
             helpers.call_action("package_search", weird_param=1)
 
-    def test_bad_solr_parameter(self):
+    def test_bad_sort_parameter(self):
+        # a sort without 'asc' or 'desc' is rejected
         with pytest.raises(SearchError):
             helpers.call_action("package_search", sort="metadata_modified")
-        # SOLR doesn't like that we didn't specify 'asc' or 'desc'
-        # SOLR error is 'Missing sort order' or 'Missing_sort_order',
-        # depending on the solr version.
 
     def _create_bulk_datasets(self, name, count):
         for i in range(count):

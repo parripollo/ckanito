@@ -15,8 +15,8 @@ from ckan.types import Context
 from ckan.common import config
 
 from ckan.lib.search.common import (
-    make_connection, SearchIndexError, SearchQueryError,  # type: ignore
-    SearchConnectionError, SolrConnectionError,  # type: ignore
+    SearchIndexError, SearchQueryError,  # type: ignore
+    SearchConnectionError,  # type: ignore
     SearchError, is_available  # type: ignore
 )
 from ckan.lib.search.backends import get_backend
@@ -26,7 +26,7 @@ from ckan.lib.search.index import (
 from ckan.lib.search.query import (
     SearchQuery,
     TagSearchQuery, ResourceSearchQuery, PackageSearchQuery,
-    QueryOptions, convert_legacy_parameters_to_solr  # type: ignore
+    QueryOptions, convert_legacy_parameters  # type: ignore
 )
 
 
@@ -240,6 +240,3 @@ def check_schema(schema_file: Optional[str] = None) -> bool:
     '''
     return get_backend().check_schema(schema_file)
 
-
-# Kept for extensions and code written against CKAN
-check_solr_schema_version = check_schema

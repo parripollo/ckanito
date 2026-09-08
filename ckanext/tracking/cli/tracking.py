@@ -62,7 +62,7 @@ def update_all(start_date: Optional[str] = None):
             date = combine(date, datetime.time(0))
         else:
             date = datetime.datetime(2011, 1, 1)
-    start_date_solrsync = date
+    start_date_indexsync = date
     end_date = datetime.datetime.now()
 
     while date < end_date:
@@ -71,7 +71,7 @@ def update_all(start_date: Optional[str] = None):
         click.echo("tracking updated for {}".format(date))
         date = stop_date
 
-    update_tracking_solr(start_date_solrsync)
+    update_tracking_index(start_date_indexsync)
 
 
 def _total_views():
@@ -268,7 +268,7 @@ def update_tracking_summary_with_package_id(package_url: str):
     session.commit()
 
 
-def update_tracking_solr(start_date: datetime.datetime):
+def update_tracking_index(start_date: datetime.datetime):
     results = (
         session.query(ts.package_id)
         .filter(

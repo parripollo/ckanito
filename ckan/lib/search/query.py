@@ -21,19 +21,19 @@ log = logging.getLogger(__name__)
 
 _open_licenses: Optional[list[str]] = None
 
-VALID_SOLR_PARAMETERS = set([
+VALID_SEARCH_PARAMETERS = set([
     'q', 'fl', 'fq', 'rows', 'sort', 'start', 'wt', 'qf', 'bf', 'boost',
     'facet', 'facet.mincount', 'facet.limit', 'facet.field',
     'extras', 'fq_list', 'tie', 'defType', 'mm', 'df'
 ])
 
-# for (solr) package searches, this specifies the fields that are searched
+# for package searches, this specifies the fields that are searched
 # and their relative weighting
 QUERY_FIELDS = "name^4 title^4 tags^2 groups^2 text"
 
-solr_regex = re.compile(r'([\\+\-&|!(){}\[\]^"~*?:])')
+_special_chars_re = re.compile(r'([\\+\-&|!(){}\[\]^"~*?:])')
 
-# Matches Solr magic fields _query_ and _val_
+# Matches the magic fields _query_ and _val_ of some search engines
 MAGIC_FIELD_RE = re.compile(
     r'\s*(?<![\w\\])\\?_(?:\\?q\\?u\\?e\\?r\\?y|\\?v\\?a\\?l)\\?_\s*:'
 )
@@ -44,36 +44,36 @@ QUERY_PARSER_RE = re.compile(r'(?:^|[^\\])(?:\\\\)*\{!')
 
 def escape_legacy_argument(val: str) -> str:
     # escape special chars \+-&|!(){}[]^"~*?:
-    return solr_regex.sub(r'\\\1', val)
+    return _special_chars_re.sub(r'\\\1', val)
 
 
-def convert_legacy_parameters_to_solr(
+def convert_legacy_parameters(
         legacy_params: dict[str, Any]) -> dict[str, Any]:
-    '''API v1 and v2 allowed search params that the SOLR syntax does not
-    support, so use this function to convert those to SOLR syntax.
+    '''API v1 and v2 allowed search params that the search query syntax
+    does not support, so use this function to convert those.
     See tests for examples.
 
     raises SearchQueryError on invalid params.
     '''
     options = QueryOptions(**legacy_params)
     options.validate()
-    solr_params = legacy_params.copy()
-    solr_q_list: list[str] = []
-    if solr_params.get('q'):
-        solr_q_list.append(solr_params['q'].replace('+', ' '))
-    non_solr_params = set(legacy_params.keys()) - VALID_SOLR_PARAMETERS
-    for search_key in non_solr_params:
+    params = legacy_params.copy()
+    q_list: list[str] = []
+    if params.get('q'):
+        q_list.append(params['q'].replace('+', ' '))
+    legacy_keys = set(legacy_params.keys()) - VALID_SEARCH_PARAMETERS
+    for search_key in legacy_keys:
         value_obj = legacy_params[search_key]
         value = value_obj.replace('+', ' ') if isinstance(value_obj, str) else value_obj
         if search_key == 'all_fields':
             if value:
-                solr_params['fl'] = '*'
+                params['fl'] = '*'
         elif search_key == 'offset':
-            solr_params['start'] = value
+            params['start'] = value
         elif search_key == 'limit':
-            solr_params['rows'] = value
+            params['rows'] = value
         elif search_key == 'order_by':
-            solr_params['sort'] = '%s asc' % value
+            params['sort'] = '%s asc' % value
         elif search_key == 'tags':
             if isinstance(value_obj, list):
                 tag_list = value_obj
@@ -81,19 +81,19 @@ def convert_legacy_parameters_to_solr(
                 tag_list = [value_obj]
             else:
                 raise SearchQueryError('Was expecting either a string or JSON list for the tags parameter: %r' % value)
-            solr_q_list.extend(['tags:"%s"' % escape_legacy_argument(tag) for tag in tag_list])
+            q_list.extend(['tags:"%s"' % escape_legacy_argument(tag) for tag in tag_list])
         else:
             if len(value.strip()):
                 value = escape_legacy_argument(value)
                 if ' ' in value:
                     value = '"%s"' % value
-                solr_q_list.append('%s:%s' % (search_key, value))
-        del solr_params[search_key]
-    solr_params['q'] = ' '.join(solr_q_list)
-    if non_solr_params:
+                q_list.append('%s:%s' % (search_key, value))
+        del params[search_key]
+    params['q'] = ' '.join(q_list)
+    if legacy_keys:
         log.debug('Converted legacy search params from %r to %r',
-                 legacy_params, solr_params)
-    return solr_params
+                 legacy_params, params)
+    return params
 
 
 class QueryOptions(Dict[str, Any]):
@@ -101,7 +101,7 @@ class QueryOptions(Dict[str, Any]):
     Options specify aspects of the search query which are only tangentially related
     to the query terms (such as limits, etc.).
     NB This is used only by legacy package search and current resource & tag search.
-       Modern SOLR package search leaves this to SOLR syntax.
+       Modern package search leaves this to the query syntax.
     """
 
     BOOLEAN_OPTIONS = ['all_fields']
@@ -317,8 +317,8 @@ class PackageSearchQuery(SearchQuery):
         '''
         assert isinstance(query, (dict, MultiDict))
         # check that query keys are valid
-        if not set(query.keys()) <= VALID_SOLR_PARAMETERS:
-            invalid_params = [s for s in set(query.keys()) - VALID_SOLR_PARAMETERS]
+        if not set(query.keys()) <= VALID_SEARCH_PARAMETERS:
+            invalid_params = [s for s in set(query.keys()) - VALID_SEARCH_PARAMETERS]
             raise SearchQueryError("Invalid search parameters: %s" % invalid_params)
 
         # default query is to return all documents
@@ -337,7 +337,7 @@ class PackageSearchQuery(SearchQuery):
         fq.extend(query.get('fq_list', []))
 
         # show only results from this CKAN instance
-        fq.append('+site_id:%s' % solr_literal(config.get('ckan.site_id')))
+        fq.append('+site_id:%s' % search_literal(config.get('ckan.site_id')))
 
         # filter for package status
         if not any('+state:' in _item for _item in fq):
@@ -346,7 +346,7 @@ class PackageSearchQuery(SearchQuery):
         # only return things we should be able to see
         if permission_labels is not None:
             fq.append('+permission_labels:(%s)' % ' OR '.join(
-                solr_literal(p) for p in permission_labels))
+                search_literal(p) for p in permission_labels))
         query['fq'] = fq
 
         # faceting
@@ -366,7 +366,6 @@ class PackageSearchQuery(SearchQuery):
             query['defType'] = defType
             query['tie'] = query.get('tie', '0.1')
             # this minimum match is explained
-            # http://wiki.apache.org/solr/DisMaxQParserPlugin#mm_.28Minimum_.27Should.27_Match.29
             query['mm'] = query.get('mm', '2<-1 5<80%')
             query['qf'] = query.get('qf', QUERY_FIELDS)
 
@@ -391,7 +390,7 @@ class PackageSearchQuery(SearchQuery):
                 if not value.startswith("{!"):
                    raise SearchError(f"Local parameters must be defined at the beginning of param '{param}'.")
 
-                # local parameters are a Solr feature, never supported here
+                # local parameters ({!...}) are never supported
                 raise SearchError(f"Local parameters are not supported in param '{param}'.")
 
         for param in query.keys():
@@ -425,9 +424,9 @@ class PackageSearchQuery(SearchQuery):
         return {'results': self.results, 'count': self.count}
 
 
-def solr_literal(t: str) -> str:
+def search_literal(t: str) -> str:
     '''
-    return a safe literal string for a solr query. Instead of escaping
+    return a safe literal string for a search query. Instead of escaping
     each of + - && || ! ( ) { } [ ] ^ " ~ * ? : \\ / we're just dropping
     double quotes -- this method currently only used by tokens like site_id
     and permission labels.

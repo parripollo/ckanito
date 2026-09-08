@@ -1533,7 +1533,7 @@ class TestSearch(object):
 
             sys.stdout.write(response.body)
             raise Exception(
-                "Solr returned an unknown error message. "
+                "The search backend returned an unknown error message. "
                 "Please check the error handling "
                 "in ckan/lib/search/query.py:run"
             )

@@ -59,14 +59,33 @@ modifies, so that merge conflicts can be resolved quickly.
   `ckan.redis.url` option and `CKAN_REDIS_URL` env var; the Redis ping at
   startup.
 
+## Renamed public names (no aliases kept)
+
+Nothing in the code is named after Solr any more. Extensions written
+against CKAN may need these one-line changes:
+
+| CKAN name | CKANito name |
+|---|---|
+| `ckan.lib.search.SolrConnectionError` | `ckan.lib.search.SearchConnectionError` |
+| `ckan.lib.search.common.make_connection` | removed (no raw engine connection; use `ckan.lib.search.backends.get_backend()`) |
+| `ckan.lib.search.check_solr_schema_version` | `ckan.lib.search.check_schema` |
+| `ckan.lib.search.convert_legacy_parameters_to_solr` | `ckan.lib.search.convert_legacy_parameters` |
+| `ckan.lib.search.query.solr_literal` | `ckan.lib.search.query.search_literal` |
+| `ckan.lib.search.query.VALID_SOLR_PARAMETERS` | `ckan.lib.search.query.VALID_SEARCH_PARAMETERS` |
+| `ckan.lib.search.index.SOLR_FIELDS` | `ckan.lib.search.index.INDEX_FIELDS` |
+| `ckanext.tracking.cli.tracking.update_tracking_solr` | `update_tracking_index` |
+| `ckan.lib.redis.connect_to_redis` | `ckan.lib.kvstore` (different API) |
+| `reset_redis` / `clean_redis` fixtures | `reset_kvstore` / `clean_kvstore` (old names still work) |
+
 ## Upstream files modified
 
 | file | what changed | why |
 |---|---|---|
-| `ckan/lib/search/common.py` | pysolr code removed; only exceptions and `is_available()` remain. `make_connection()` raises a clear `SearchError`. `SearchConnectionError` added, `SolrConnectionError` kept as alias. | Solr calls moved to the backend, then Solr removed. |
+| `ckan/lib/search/common.py` | pysolr code removed; only the exceptions and `is_available()` remain. `SolrConnectionError` renamed `SearchConnectionError`, `make_connection` removed. | Solr calls moved to the backend, then Solr removed. |
 | `ckan/lib/search/index.py` | `clear_index`, `index_package` (tail), `commit`, `delete_package` call `get_backend()`. | Same. |
 | `ckan/lib/search/query.py` | `get_all_entity_ids`, `get_index`, `run` (tail) call `get_backend()`; Solr local params (`{!...}`) are always rejected, the allow-list and its pyparsing helper are gone. | Same. |
-| `ckan/lib/search/__init__.py` | `check_schema()` delegates to the backend; `check_solr_schema_version` kept as an alias. | Same. |
+| `ckan/lib/search/__init__.py` | `check_schema()` delegates to the backend (was `check_solr_schema_version`). | Same. |
+| `ckan/views/api.py`, `ckan/views/dataset.py`, `ckan/logic/action/get.py`, `ckan/logic/schema/__init__.py`, `ckan/lib/dictization/model_dictize.py`, `ckan/plugins/interfaces.py`, `ckan/model/meta.py`, `ckan/model/package_relationship.py`, `ckanext/tracking/` | renamed identifiers (see the table above) and comments/docstrings that described Solr behaviour. | No Solr vocabulary left in the code. |
 | `ckan/config/environment.py` | calls `search.check_schema()`; `CKAN_SOLR_*` env var mapping removed. | No Solr. |
 | `test-core.ini`, `test-core-ci.ini`, `.gitignore`, `pyproject.toml`, `setup.py` | Solr entries removed. | No Solr. |
 | `ckan/plugins/interfaces.py` | `ISearchBackend` interface appended. | Lets extensions register backends. |

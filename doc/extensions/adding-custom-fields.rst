@@ -453,14 +453,12 @@ search page to sort datasets by our custom field. Add a new file called
 This overrides the search ordering drop down code block, the code is the
 same as the default dataset search block but we are adding two additional lines
 that define the display name of that search ordering (e.g. Custom Field
-Ascending) and the SOLR sort ordering (e.g. custom_text asc). If you reload your
+Ascending) and the search sort ordering (e.g. custom_text asc). If you reload your
 development server you should be able to see these two additional sorting options
 on the dataset search page.
 
-The SOLR sort ordering can define arbitrary functions for custom sorting, but
-this is beyond the scope of this tutorial for further details see
-http://wiki.apache.org/solr/CommonQueryParameters#sort and
-http://wiki.apache.org/solr/FunctionQuery
+The sort ordering is ``field asc`` or ``field desc``; any field of the
+search index, including custom ``extras``, can be used.
 
 
 You can find the complete source for this tutorial at

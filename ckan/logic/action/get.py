@@ -27,7 +27,7 @@ import ckan.model.misc as misc
 import ckan.plugins as plugins
 import ckan.lib.search as search
 from ckan.model.follower import ModelFollowingModel
-from ckan.lib.search.query import solr_literal
+from ckan.lib.search.query import search_literal
 
 import ckan.lib.plugins as lib_plugins
 import ckan.lib.datapreview as datapreview
@@ -1015,7 +1015,7 @@ def package_show(context: Context, data_dict: DataDict) -> ActionResult.PackageS
                 package_dict_validated = False
             metadata_modified = pkg.metadata_modified.isoformat()
             search_metadata_modified = search_result['metadata_modified']
-            # solr stores less precise datetime,
+            # the search index stores less precise datetime,
             # truncate to 22 characters to get good enough match
             if metadata_modified[:22] != search_metadata_modified[:22]:
                 package_dict = None
@@ -1488,7 +1488,7 @@ def package_autocomplete(
             'title_ngram:{0}',
             'name:{0}',
             'title:{0}',
-        ]).format(solr_literal(q)),
+        ]).format(search_literal(q)),
         'fl': 'name,title',
         'rows': limit
     }
@@ -1656,20 +1656,19 @@ def package_search(context: Context, data_dict: DataDict) -> ActionResult.Packag
     '''
     Searches for packages satisfying a given search criteria.
 
-    This action accepts solr search query parameters (details below), and
+    This action accepts search query parameters (details below), and
     returns a dictionary of results, including dictized datasets that match
     the search criteria, a search count and also facet information.
 
-    **Solr Parameters:**
+    **Search Parameters:**
 
     For more in depth treatment of each parameter, please read the
-    `Solr Documentation
-    <https://lucene.apache.org/solr/guide/6_6/common-query-parameters.html>`_.
+    documentation of the search query syntax in the user guide.
 
-    This action accepts a *subset* of solr's search query parameters:
+    This action accepts a *subset* of the Lucene search query parameters:
 
 
-    :param q: the solr query.  Optional.  Default: ``"*:*"``
+    :param q: the search query.  Optional.  Default: ``"*:*"``
     :type q: string
     :param fq: any filter queries to apply.  Note: ``+site_id:{ckan_site_id}``
         is added to this string prior to the query being executed.
@@ -1677,7 +1676,7 @@ def package_search(context: Context, data_dict: DataDict) -> ActionResult.Packag
     :param fq_list: additional filter queries to apply.
     :type fq_list: list of strings
     :param sort: sorting of the search results.  Optional.  Default:
-        ``'score desc, metadata_modified desc'``.  As per the solr
+        ``'score desc, metadata_modified desc'``.  As per the search
         documentation, this is a comma-separated string of field names and
         sort-orderings.
     :type sort: string
@@ -1719,15 +1718,12 @@ def package_search(context: Context, data_dict: DataDict) -> ActionResult.Packag
     :type use_default_schema: bool
 
 
-    The following advanced Solr parameters are supported as well. Note that
-    some of these are only available on particular Solr versions. See Solr's
-    `dismax`_ and `edismax`_ documentation for further details on them:
+    The following advanced parameters are accepted as well for
+    compatibility; how much of them a search backend honours is up to
+    the backend (the built-in PostgreSQL one uses ``qf`` and ignores the
+    rest):
 
     ``qf``, ``wt``, ``bf``, ``boost``, ``tie``, ``defType``, ``mm``
-
-
-    .. _dismax: http://wiki.apache.org/solr/DisMaxQParserPlugin
-    .. _edismax: http://wiki.apache.org/solr/ExtendedDisMax
 
 
     **Examples:**
@@ -1775,10 +1771,10 @@ def package_search(context: Context, data_dict: DataDict) -> ActionResult.Packag
 
     **Limitations:**
 
-    The full solr query language is not exposed, including.
+    The full Lucene query language is not exposed, including.
 
     fl
-        The parameter that controls which fields are returned in the solr
+        The parameter that controls which fields are returned in the search
         query.
         fl can be  None or a list of result fields, such as
         ['id', 'extras_custom_field'].
@@ -1839,7 +1835,7 @@ def package_search(context: Context, data_dict: DataDict) -> ActionResult.Packag
 
         data_dict.setdefault('fq', '')
 
-        # Remove before these hit solr FIXME: whitelist instead
+        # Remove before these hit the search backend FIXME: whitelist instead
         include_private = asbool(data_dict.pop('include_private', False))
         include_drafts = asbool(data_dict.pop('include_drafts', False))
         include_deleted = asbool(data_dict.pop('include_deleted', False))
@@ -1855,7 +1851,7 @@ def package_search(context: Context, data_dict: DataDict) -> ActionResult.Packag
                 states.append('deleted')
             data_dict['fq'] += ' +state:({})'.format(' OR '.join(states))
 
-        # Pop these ones as Solr does not need them
+        # Pop these ones as the search backend does not need them
         extras = data_dict.pop('extras', None)
 
         # enforce permission filter based on user
@@ -1893,7 +1889,7 @@ def package_search(context: Context, data_dict: DataDict) -> ActionResult.Packag
                                 package_dict)
                     results.append(package_dict)
                 else:
-                    log.error('No package_dict is coming from solr for package '
+                    log.error('No package_dict is coming from the search index for package '
                               'id %s', package['id'])
 
         count = query.count

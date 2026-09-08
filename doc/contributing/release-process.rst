@@ -94,40 +94,8 @@ Creating a release development branch
 	  +__version__ = "2.13.0a0"
 
 
-#. Update the version number in the Solr schema file (``ckan/config/solr/schema.xml``) and
-   review the value of ``SUPPORTED_SCHEMA_VERSIONS`` in ``ckan/lib/search/__init__.py``.
-   Aside from adding the new version, you might need to drop previous one if there have been
-   incompatible changes in the Solr schema.
-
-   .. code:: diff
-
-      diff --git a/ckan/config/solr/schema.xml b/ckan/config/solr/schema.xml
-      index 2a86c4ca7..d8b1e46e8 100644
-      --- a/ckan/config/solr/schema.xml
-      +++ b/ckan/config/solr/schema.xml
-      @@ -25,7 +25,7 @@
-       schema. We used to use the `version` attribute for this but this is an internal
-       attribute that should not be used so starting from CKAN 2.10 we use the `name`
-       attribute with the form `ckan-X.Y` -->
-      -<schema name="ckan-2.11" version="1.6">
-      +<schema name="ckan-2.12" version="1.6">
-
-       <types>
-           <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
-      diff --git a/ckan/lib/search/__init__.py b/ckan/lib/search/__init__.py
-      index 0b8fb37b6..4040f0525 100644
-      --- a/ckan/lib/search/__init__.py
-      +++ b/ckan/lib/search/__init__.py
-      @@ -57,7 +57,7 @@ def text_traceback() -> str:
-           return res
-
-
-      -SUPPORTED_SCHEMA_VERSIONS = ['2.8', '2.9', '2.10', '2.11']
-      +SUPPORTED_SCHEMA_VERSIONS = ['2.8', '2.9', '2.10', '2.11', '2.12']
-
-       DEFAULT_OPTIONS = {
-           'limit': 20,
-
+#. Review the search index migrations: if the ``package_search_index`` table
+   changed, make sure a migration and a note in the changelog exist.
 
 #. Create the documentation branch from the release branch. This branch should be named
    just with the minor version and nothing else (e.g. ``2.10``, ``2.11``, etc). We will use
@@ -427,7 +395,6 @@ stages involved::
 
    * [ ] Create release branch
    * [ ] Update version in master
-   * [ ] Update Solr schema version
    * [ ] Create documentation branch
    * [ ] Set up translations on Transifex
    * [ ] Create GitHub label

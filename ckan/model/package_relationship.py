@@ -61,7 +61,6 @@ class PackageRelationship(core.StatefulObjectMixin,
 
     # List of (type, corresponding_reverse_type)
     # e.g. (A "depends_on" B, B has a "dependency_of" A)
-    # don't forget to add specs to Solr's schema.xml
     types: list[tuple[str, str]] = [(u'depends_on', u'dependency_of'),
              (u'derives_from', u'has_derivation'),
              (u'links_to', u'linked_from'),

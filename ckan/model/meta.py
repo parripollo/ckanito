@@ -40,7 +40,7 @@ def ckan_before_flush(session: Any, flush_context: Any, instances: Any):
     """ Create a new _object_cache in the Session object.
 
     _object_cache is used in DomainObjectModificationExtension to trigger
-    notifications on changes. e.g: re-indexing a package in solr upon update.
+    notifications on changes. e.g: re-indexing a package upon update.
     """
     if not hasattr(session, '_object_cache'):
         session._object_cache= {'new': set(),

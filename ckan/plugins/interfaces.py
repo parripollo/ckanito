@@ -528,7 +528,7 @@ class IPackageController(Interface):
 
     def before_dataset_index(self, pkg_dict: dict[str, Any]) -> dict[str, Any]:
         u'''
-        Extensions will receive what will be given to Solr for
+        Extensions will receive what will be given to the search index for
         indexing. This is essentially a flattened dict (except for
         multi-valued fields such as tags) of all the terms sent to
         the indexer. The extension can modify this by returning an
@@ -1610,7 +1610,7 @@ class IFacets(Interface):
 
     Dataset searches can be faceted on any field in the dataset schema that it
     makes sense to facet on. This means any dataset field that is in CKAN's
-    Solr search index, basically any field that you see returned by
+    search index, basically any field that you see returned by
     :py:func:`~ckan.logic.action.get.package_show`.
 
     If there are multiple ``IFacets`` plugins active at once, each plugin will

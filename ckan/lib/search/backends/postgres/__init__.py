@@ -44,7 +44,7 @@ _TEXT_CONFIG_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _PARAM_RE = re.compile(r"(?<![:\w\\]):([A-Za-z_]\w*)(?!:)")
 
 # fields copied into the full text vector, by weight (mirrors the
-# copyField rules of CKAN's Solr schema)
+# copy rules of CKAN's historical search schema)
 _FTS_A = ("name", "title")
 _FTS_B = ("tags", "groups", "organization")
 _FTS_C = ("notes", "res_name", "res_description")

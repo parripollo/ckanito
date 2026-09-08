@@ -42,7 +42,7 @@ Patch Releases
   Patch releases do not contain:
 
   - Database schema changes or migrations (unless addressing security issues)
-  - Solr schema changes
+  - Search index schema changes
   - Function interface changes
   - Plugin interface changes
   - New dependencies (unless addressing security issues)

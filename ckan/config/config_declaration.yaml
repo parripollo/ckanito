@@ -924,7 +924,7 @@ groups:
         description: |
           Search backend used to index and query datasets. Built-in
           backends: ``postgres`` (full text search on the CKAN database,
-          no extra services needed) and ``solr``. Extensions can register
+          no extra services needed). Extensions can register
           more through the ``ISearchBackend`` plugin interface, and a
           dotted path to a ``SearchBackend`` subclass
           (``package.module:ClassName``) is also accepted.
@@ -939,8 +939,8 @@ groups:
           used by the ``postgres`` search backend to stem and match words,
           both when indexing and when searching. The default
           ``ckan_english`` is created by the CKAN migrations: English
-          stemming without stop words, which is what CKAN's Solr schema
-          did. Any configuration installed in the database can be used
+          stemming without stop words, which is how CKAN always searched.
+          Any configuration installed in the database can be used
           (``spanish``, ``simple`` to disable stemming, ...).
 
           .. note:: If you change this value, you need to rebuild the search index.

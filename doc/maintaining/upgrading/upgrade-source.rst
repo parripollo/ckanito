@@ -59,13 +59,6 @@ CKAN release you're upgrading to:
          pip install -e .
 
 
-#. If there have been changes in the Solr schema (check the :doc:`/changelog`
-   to find out) you need to restart Jetty for the changes to take effect:
-
-   .. parsed-literal::
-
-    sudo service jetty restart
-
 #. If there have been changes in the database schema (check the
    :doc:`/changelog` to find out) you need to :ref:`upgrade your database
    schema <db upgrade>`.

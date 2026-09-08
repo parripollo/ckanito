@@ -340,7 +340,7 @@ using any field, as in a normal dataset search::
 
 .. tip:: If you set the ``ckan_logger`` level to ``DEBUG`` on your
     configuration file you can see the full search parameters being sent
-    to Solr.
+    to the search backend.
 
 For convenience, there is also an option to create views on a particular
 dataset or datasets::

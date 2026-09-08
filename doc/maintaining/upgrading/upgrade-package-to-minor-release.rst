@@ -58,13 +58,6 @@ respectively.
    :doc:`/changelog` to find out) you need to :ref:`upgrade your database
    schema <db upgrade>`.
 
-#. If there have been changes in the Solr schema (check the :doc:`/changelog`
-   to find out) you need to restart Jetty for the changes to take effect:
-
-   .. parsed-literal::
-
-    sudo service jetty restart
-
 #. If you have any CKAN extensions installed from source, you may need to
    checkout newer versions of the extensions that work with the new CKAN
    version. Refer to the documentation for each extension. We recommend

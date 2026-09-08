@@ -59,7 +59,6 @@ rst_epilog = '''
 .. |storage_dir| replace:: |storage_parent_dir|/default
 .. |storage_path| replace:: |storage_parent_dir|/default
 .. |restart_uwsgi| replace:: sudo supervisorctl restart ckan-uwsgi:*
-.. |solr| replace:: Solr
 .. |restructuredtext| replace:: reStructuredText
 .. |nginx| replace:: Nginx
 .. |sqlite| replace:: SQLite

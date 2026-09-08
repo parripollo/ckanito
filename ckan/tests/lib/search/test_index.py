@@ -260,14 +260,14 @@ class TestPackageSearchIndex:
         ]
         return pkg_dict
 
-    def test_index_package_stores_basic_solr_fields(self):
+    def test_index_package_stores_basic_index_fields(self):
         index = search.index.PackageSearchIndex()
         pkg_dict = self._get_pkg_dict()
 
         index.index_package(pkg_dict)
         indexed_pkg = search.show(pkg_dict["name"])
 
-        # At root level are the fields that SOLR uses
+        # At root level are the fields that the search index uses
         assert indexed_pkg["name"] == "river-quality"
         assert indexed_pkg["metadata_modified"] == "2014-06-10T08:24:12.782257Z"
         assert indexed_pkg["entity_type"] == "package"

@@ -568,10 +568,10 @@ Advanced Search Examples:
 .. note::
 
     CKAN uses the full text search of its PostgreSQL database as its search
-    engine, with a query syntax borrowed from Apache Solr. Not the whole
-    Solr functionality is offered: local parameters, function queries and
-    other advanced features are not supported. Also note that behaviour
-    can differ due to
+    engine, with a query syntax borrowed from Lucene. Not the whole Lucene
+    syntax is offered: local parameters, function queries and other
+    advanced features are not supported. Also note that behaviour can
+    differ due to
     extensions or local development in your CKAN instance.
 
 Personalization

@@ -700,7 +700,7 @@ def default_package_search_schema(
         'facet.limit': [ignore_missing, int_validator],
         'facet.field': [ignore_missing, convert_to_json_if_string,
                         list_of_strings],
-        'extras': [ignore_missing]  # Not used by Solr,
+        'extras': [ignore_missing]  # Not used by the search backend,
                                     # but useful for extensions
     }
 

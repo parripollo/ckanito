@@ -52,7 +52,7 @@ def group_list_dictize(
         include_extras: bool=False) -> list[dict[str, Any]]:
 
     group_dictize_context: Context = context.copy()
-    # Set options to avoid any SOLR queries for each group, which would
+    # Set options to avoid any search queries for each group, which would
     # slow things further.
     group_dictize_options: dict[str, Any] = {
             'packages_field': 'dataset_count' if with_package_counts else None,
@@ -333,7 +333,7 @@ def _get_members(context: Context, group: model.Group,
 def get_group_dataset_counts(
         fq: str ='dataset_type:dataset',
         permissions_labels: Optional[list[str]]=None) -> dict[str, Any]:
-    '''For all public groups, return their dataset counts, as a SOLR facet'''
+    '''For all public groups, return their dataset counts, as a search facet'''
     query = search.PackageSearchQuery()
     q: dict[str, Any] = {'q': '', 'fq': fq,
           'fl': 'groups', 'facet.field': ['groups', 'owner_org'],
@@ -378,7 +378,7 @@ def group_dictize(group: model.Group, context: Context,
     if packages_field:
         def get_packages_for_this_group(group_: model.Group,
                                         just_the_count: bool = False):
-            # Ask SOLR for the list of packages for this org/group
+            # Ask the search index for the list of packages for this org/group
             q: dict[str, Any] = {
                 'facet': 'false',
                 'rows': 0,

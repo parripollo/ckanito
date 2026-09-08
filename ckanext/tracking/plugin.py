@@ -46,7 +46,7 @@ class TrackingPlugin(p.SingletonPlugin):
     ) -> "dict[str, Any]":
         """Appends tracking summary data to the package dict.
 
-        Tracking data is not stored in Solr so we need to retrieve it
+        Tracking data is not stored in the search index so we need to retrieve it
         from the database.
         """
         if "id" not in pkg_dict:
@@ -71,7 +71,7 @@ class TrackingPlugin(p.SingletonPlugin):
     ) -> "dict[str, Any]":
         """Add tracking summary to search results.
 
-        Tracking data is indexed but not stored in Solr so we need to
+        Tracking data is indexed but not stored in the search index so we need to
         fetch it from the database. This can cause some discrepancies since
         the number of views when indexing might have been different than
         when this code is run.
@@ -100,11 +100,11 @@ class TrackingPlugin(p.SingletonPlugin):
         """Index tracking information.
 
         This method will index (but not store) the tracking information of
-        the dataset. This will only allow us to sort Solr's queries by views.
+        the dataset. This will only allow us to sort search queries by views.
         For the actual data we will query the database after the search.
 
         It will also remove the tracking_summary key from the package dict
-        since it is not a valid Solr field.
+        since it is not a valid index field.
         """
         pkg_dict.pop("tracking_summary", None)
         for r in pkg_dict.get("resources", []):

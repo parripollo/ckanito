@@ -24,7 +24,7 @@ __all__ = ["Compiler", "FieldTypes", "parse_sort", "parse_date"]
 class FieldTypes:
     """What we know about the fields of the search document.
 
-    Mirrors the Solr schema CKAN has always shipped: a handful of typed
+    Mirrors the search schema CKAN has always had: a handful of typed
     columns, ``text``-like fields that are searched with stemming, dates,
     counters, and everything else matched as an exact string.
     """
@@ -366,7 +366,7 @@ _DATE_MATH_OP_RE = re.compile(
 
 
 def parse_date(value: str, now: datetime.datetime) -> datetime.datetime:
-    """Parse an ISO 8601 date or Solr date math (``NOW-7DAYS/DAY``)."""
+    """Parse an ISO 8601 date or Lucene-style date math (``NOW-7DAYS/DAY``)."""
     value = value.strip()
     match = _DATE_MATH_RE.match(value)
     if match:
