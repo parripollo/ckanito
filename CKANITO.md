@@ -39,6 +39,9 @@ modifies, so that merge conflicts can be resolved quickly.
   `kv_store` tables; migration
   `111_d2b4f6a8c0e1_create_background_job_session_kv_tables.py`.
 - `ckan/tests/lib/test_jobqueue.py`, `ckan/tests/lib/test_kvstore.py`.
+- `doc/ckanito/` - the technical explanation of the changes for CKAN
+  experts (architecture, search, jobs, sessions and key/value store,
+  upstream tracking and migration).
 - `ckan/tests/lib/search/test_backends.py`,
   `ckan/tests/lib/search/postgres/test_lucene.py`.
 
