@@ -59,22 +59,6 @@ _QUERIES: dict[str, Type[SearchQuery]] = {
     'package': PackageSearchQuery
 }
 
-_SOLR_COMPAT_NAMES = (
-    'SUPPORTED_SCHEMA_VERSIONS',
-    'SOLR_SCHEMA_FILE_OFFSET_MANAGED',
-    'SOLR_SCHEMA_FILE_OFFSET_CLASSIC',
-)
-
-
-def __getattr__(name: str) -> Any:
-    # Solr specific constants that used to live here. Resolved lazily so
-    # that importing ckan.lib.search does not require the Solr backend.
-    if name in _SOLR_COMPAT_NAMES:
-        import ckan.lib.search.backends.solr as solr_backend
-        return getattr(solr_backend, name)
-    raise AttributeError(name)
-
-
 def _normalize_type(_type: Any) -> str:
     if isinstance(_type, domain_object.DomainObject):
         _type = _type.__class__

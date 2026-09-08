@@ -6,7 +6,6 @@ from ckan.common import config
 from ckan.lib.search import SearchError, backends
 from ckan.lib.search.backends.base import SearchBackend, SearchResponse
 from ckan.lib.search.backends.postgres import PostgresSearchBackend
-from ckan.lib.search.backends.solr import SolrSearchBackend
 
 
 class _DummyBackend(SearchBackend):
@@ -25,14 +24,14 @@ def test_default_backend_is_postgres():
 
 
 def test_explicit_name():
-    assert backends.get_backend_class("solr") is SolrSearchBackend
+    assert backends.get_backend_class("postgres") is PostgresSearchBackend
 
 
 @pytest.mark.ckan_config(
     "ckan.search.backend",
-    "ckan.lib.search.backends.solr:SolrSearchBackend")
+    "ckan.lib.search.backends.postgres:PostgresSearchBackend")
 def test_dotted_path_from_config():
-    assert backends.get_backend_class() is SolrSearchBackend
+    assert backends.get_backend_class() is PostgresSearchBackend
 
 
 @pytest.mark.ckan_config("ckan.search.backend", "elastic")

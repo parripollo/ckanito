@@ -29,7 +29,6 @@ DEFAULT_BACKEND = "postgres"
 
 BUILTIN_BACKENDS: dict[str, str] = {
     "postgres": "ckan.lib.search.backends.postgres:PostgresSearchBackend",
-    "solr": "ckan.lib.search.backends.solr:SolrSearchBackend",
 }
 
 

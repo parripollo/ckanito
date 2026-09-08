@@ -33,14 +33,9 @@ jobs:
         image: redis:7
         ports:
           - 6379:6379
-      ckan_solr:
-        image: ckan/ckan-solr:master
-        ports:
-          - 8983:8983
 
     env:
       CKAN_SQLALCHEMY_URL: postgresql://ckan_default:pass@localhost/ckan_test
-      CKAN_SOLR_URL: http://localhost:8983/solr/ckan
       CKAN_REDIS_URL: redis://localhost:6379/1
 
     steps:

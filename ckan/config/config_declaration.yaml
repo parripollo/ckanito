@@ -907,10 +907,10 @@ groups:
         default: default
         example: my_ckan_instance
         description: |
-          CKAN uses Solr to index and search packages. The search index is
-          linked to the value of the ``ckan.site_id``, so if you have more than
-          one CKAN instance using the same `solr_url`_, they will each have a
-          separate search index as long as their ``ckan.site_id`` values are
+          The search index is linked to the value of the ``ckan.site_id``,
+          so if you have more than one CKAN instance sharing a search index,
+          they will each have a separate index as long as their
+          ``ckan.site_id`` values are
           different. If you are only running a single CKAN instance then this
           can be ignored.
 
@@ -943,27 +943,6 @@ groups:
 
           .. note:: If you change this value, you need to rebuild the search index.
 
-      - key: solr_url
-        placeholder: http://127.0.0.1:8983/solr/ckan
-        required: true
-        example: http://solr.okfn.org:8983/solr/ckan-schema-2.0
-        description: |
-          This configures the Solr server used for search. The Solr schema
-          found at that URL must be one of the ones in ``ckan/config/solr``
-          (generally the most recent one). A check of the schema version number
-          occurs when CKAN starts.
-
-          Optionally, ``solr_user`` and ``solr_password`` can also be
-          configured to specify HTTP Basic authentication details for all Solr
-          requests.
-
-          .. note::  If you change this value, you need to rebuild the search index.
-
-      - key: solr_user
-        description: User to use in HTTP Basic Authentication when connecting to Solr
-      - key: solr_password
-        description: Password to use in HTTP Basic Authentication when connecting to Solr
-
       - key: ckan.search.remove_deleted_packages
         type: bool
         default: true
@@ -973,25 +952,6 @@ groups:
           setting to ``False``. This will enable the  ``include_deleted``
           parameter in the  :py:func:`ckan.logic.action.get.package_search`
           API action.
-
-      - key: ckan.search.solr_commit
-        type: bool
-        default: true
-        example: false
-        description: |
-          Make ckan commit changes solr after every dataset update change. Turn
-          this to false if on solr 4.0 and you have automatic (soft)commits
-          enabled to improve dataset update/create speed (however there may be
-          a slight delay before dataset gets seen in results).
-
-      - key: ckan.search.solr_allowed_query_parsers
-        type: list
-        default: []
-        example: ["bool", "knn"]
-        description: |
-          Local parameters are not allowed when passing queries to Solr. An exception to this is when passing local parameters for special query parsers, that need to be enabled explicitly using this config option. For instance, the example provided would allow sending queries like the following::
-            search_params["q"] = "{!bool must=test}..."
-            search_params["q"] = "{!knn field=vector topK=10}..."
 
       - key: ckan.search.show_all_types
         default: dataset
@@ -1074,15 +1034,6 @@ groups:
 
           * ``group_list``'s ``limit`` when ``all_fields=true``
           * ``organization_list``'s ``limit`` when ``all_fields=true``
-
-      - key: solr_timeout
-        type: int
-        default: 60
-        example: 120
-        description: |
-          The option defines the timeout in seconds until giving up on a
-          request. Raising this value might help you if you encounter a timeout
-          exception.
 
   - annotation: Redis Settings
     options:

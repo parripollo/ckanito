@@ -3,13 +3,12 @@ import uuid
 import pytest
 
 
-from ckan.lib.search.common import SearchQueryError, config as ckan_config
+from ckan.lib.search.common import config as ckan_config
 import ckan.tests.factories as factories
 from ckan.tests import helpers
 import ckan.model as model
 import ckan.lib.search as search
 from ckan.lib.search.backends import get_backend
-from ckan.lib.search.query import _get_local_query_parser
 
 def get_data():
     return {
@@ -65,53 +64,6 @@ def test_04_delete_package_from_dict():
     helpers.call_action("package_delete", context={}, id=package["id"])
 
     assert query.run({"q": ""})["count"] == 1
-
-
-@pytest.mark.parametrize(
-    "query,parser",
-    [
-        ("*:*", ""),
-        ("title:test AND organization:test-org", ""),
-        ("{!bool must=test}", "bool"),
-        (" {!bool must=test}", "bool"),
-        ("{!bool must='test string'}", "bool"),
-        ("{!bool must='test string'}solr rocks", "bool"),
-        (" {!bool must='test string'}solr rocks", "bool"),
-        (" {!bool must='test string'}", "bool"),
-        ("{!bool must='test string with \"quotes\"'}", "bool"),
-        ("{!type=bool must=test}", "bool"),
-        ("{!type=bool must='test string'}", "bool"),
-        ("{!must=test type=bool}", "bool"),
-        ("{!must=test type=bool}solr rocks", "bool"),
-        ("{!must='test text' type=bool}solr rocks", "bool"),
-        ("{!dismax qf=myfield}solr rocks", "dismax"),
-        ("{!type=dismax qf=myfield v='solr rocks'}", "dismax"),
-        ("{!type=lucene df=summary}solr rocks", "lucene"),
-        ("{!v='lies type= here' type=dismax}", "dismax"),
-        ("{!some_parser}", "some_parser"),
-        ("{!dismax v=some_value}", "dismax"),
-        ("{!some_parser a='0.9' traversalFilter='foo:[*+TO+15]'}", "some_parser"),
-        ("{!some_parser must=$ref}", "some_parser"),
-    ]
-
-)
-def test_get_local_query_parser(query, parser):
-
-    assert _get_local_query_parser(query) == parser
-
-
-@pytest.mark.parametrize(
-    "query",
-    [
-        "{!v='lies type= here' some params",
-        "{!v='lies type= here' v2='\\{some test \\} type=dismax}",
-    ]
-
-)
-def test_get_local_query_parser_exception(query):
-
-    with pytest.raises(SearchQueryError):
-        _get_local_query_parser(query)
 
 
 def test_local_params_not_allowed_by_default():
@@ -176,7 +128,6 @@ def test_local_params_with_whitespace_not_allowed_by_default():
     ]
 
 )
-@pytest.mark.ckan_config("ckan.search.solr_allowed_query_parsers", "bool")
 def test_magic_fields_not_allowed(q):
 
     query = search.query_for(model.Package)
@@ -241,9 +192,8 @@ def test_local_params_at_the_start(q):
     assert str(e.value) == "Local parameters must be defined at the beginning of param 'q'."
 
 
-@pytest.mark.ckan_config("ckan.search.solr_allowed_query_parsers", "bool")
 @pytest.mark.usefixtures("clean_index")
-def test_allowed_local_params_via_config_not_defined():
+def test_local_params_never_allowed():
 
     query = search.query_for(model.Package)
     with pytest.raises(search.common.SearchError) as e:

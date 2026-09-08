@@ -48,7 +48,6 @@ class TestDatastoreNew:
             content_type="application/json",
             body=json.dumps({"job_id": "foo", "job_key": "bar"}),
         )
-        responses.add_passthru(config["solr_url"])
 
         package = factories.Dataset.model()
 
@@ -250,7 +249,6 @@ class TestDatastoreCreate(object):
             content_type="application/json",
             body=json.dumps({"job_id": "foo", "job_key": "barloco"}),
         )
-        responses.add_passthru(config["solr_url"])
 
         call_action(
             "datapusher_submit",
@@ -279,7 +277,6 @@ class TestDatastoreCreate(object):
             content_type="application/json",
             body=json.dumps({"job_id": "foo", "job_key": "barloco"}),
         )
-        responses.add_passthru(config["solr_url"])
 
         dataset = factories.Dataset()
         call_action(
@@ -303,7 +300,6 @@ class TestDatastoreCreate(object):
             content_type="application/json",
             body=json.dumps({"job_id": "foo", "job_key": "barloco"}),
         )
-        responses.add_passthru(config["solr_url"])
 
         dataset = factories.Dataset()
         resource = call_action(

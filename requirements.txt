@@ -100,8 +100,6 @@ pyjwt==2.13.0
     # via -r requirements.in
 pyparsing==3.3.2
     # via -r requirements.in
-pysolr==3.11.0
-    # via -r requirements.in
 python-dateutil==2.9.0.post0
     # via
     #   -r requirements.in
@@ -122,9 +120,7 @@ pyyaml==6.0.3
 redis==8.0.1
     # via rq
 requests==2.34.2
-    # via
-    #   -r requirements.in
-    #   pysolr
+    # via -r requirements.in
 rq==2.10.0
     # via -r requirements.in
 simplejson==4.1.1

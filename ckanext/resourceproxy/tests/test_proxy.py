@@ -5,7 +5,6 @@ import requests
 import json
 import responses
 
-from ckan.common import config
 from ckan.tests import factories, helpers
 
 import ckanext.resourceproxy.plugin as proxy
@@ -105,7 +104,6 @@ class TestProxyPrettyfied(object):
 
     @responses.activate
     def test_invalid_url(self, app):
-        responses.add_passthru(config['solr_url'])
         self.resource = helpers.call_action(
             'resource_patch',
             {},

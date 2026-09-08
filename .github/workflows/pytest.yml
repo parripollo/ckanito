@@ -130,8 +130,6 @@ jobs:
         env:
           POSTGRES_USER: ckan
           POSTGRES_PASSWORD: ckan
-      ckan-solr:
-        image: ckan/ckan-solr:master
       ckan-redis:
         image: redis:7
 

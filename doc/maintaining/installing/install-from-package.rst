@@ -26,8 +26,6 @@ Host ports requirements:
     +------------+------------+-----------+
     | uWSGI      | 8800       | DataPusher|
     +------------+------------+-----------+
-    | Solr       | 8983       | Search    |
-    +------------+------------+-----------+
     | PostgreSQL | 5432       | Database  |
     +------------+------------+-----------+
     | Redis      | 6379       | Search    |
@@ -101,17 +99,13 @@ Edit the :ref:`sqlalchemy.url` option in your :ref:`config_file` (|ckan.ini|) fi
 set the correct password, database and database user.
 
 
------------------------------
-3. Install and configure Solr
------------------------------
+--------------------------
+3. Set up the search index
+--------------------------
 
-.. tip::
-
-   You can install |solr| and CKAN on different servers. Just
-   change the :ref:`solr_url` setting in your
-   |ckan.ini| |production.ini| file to reference your |solr| server.
-
-.. include:: solr.rst
+Nothing to install: CKAN indexes datasets in its own PostgreSQL database
+(see :ref:`ckan.search.backend`). The index table is created by
+``ckan db init`` and filled with ``ckan search-index rebuild``.
 
 
 ------------------------------

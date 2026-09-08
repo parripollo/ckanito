@@ -43,11 +43,10 @@ def is_available() -> bool:
 
 def make_connection(decode_dates: bool = True) -> Any:
     """
-    Return a raw connection to the Solr server.
-
-    Only meaningful with the ``solr`` backend. It is kept so that
-    extensions that reach into Solr directly keep importing; new code
-    should go through :func:`ckan.lib.search.backends.get_backend`.
+    Kept so that extensions written against CKAN keep importing. There is
+    no Solr in CKANito: go through
+    :func:`ckan.lib.search.backends.get_backend` instead.
     """
-    from ckan.lib.search.backends.solr import make_connection as _connect
-    return _connect(decode_dates)
+    raise SearchError(
+        "make_connection() is not available: CKANito has no Solr. Use "
+        "ckan.lib.search.backends.get_backend() instead.")

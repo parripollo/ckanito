@@ -12,7 +12,6 @@ ENV_VAR_LIST = [
     (u"CKAN_SQLALCHEMY_URL", u"postgresql://mynewsqlurl/"),
     (u"CKAN_DATASTORE_WRITE_URL", u"http://mynewdbwriteurl/"),
     (u"CKAN_DATASTORE_READ_URL", u"http://mynewdbreadurl/"),
-    (u"CKAN_SOLR_URL", u"http://mynewsolrurl/solr"),
     (u"CKAN_SITE_ID", u"my-site"),
     (u"CKAN_SMTP_SERVER", u"mail.example.com"),
     (u"CKAN_SMTP_STARTTLS", u"True"),
@@ -45,7 +44,6 @@ def test_update_config_env_vars(ckan_config):
         os.environ.setdefault(env_var, value)
     p.plugins_update()
 
-    assert ckan_config[u"solr_url"] == u"http://mynewsolrurl/solr"
     assert ckan_config[u"sqlalchemy.url"] == u"postgresql://mynewsqlurl/"
     assert (
         ckan_config[u"ckan.datastore.write_url"] == u"http://mynewdbwriteurl/"

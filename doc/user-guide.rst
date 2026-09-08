@@ -483,17 +483,15 @@ least one colon (":") CKAN will perform an advanced search.
 Simple Search
 -------------
 
-CKAN defers most of the search to Solr and by default it uses the `DisMax Query
-Parser <https://solr.apache.org/guide/8_11/the-dismax-query-parser.html>`_
-that was primarily designed to be easy to use and to accept almost any input
-without returning an error.
+A simple search is a full text search over the datasets, designed to be
+easy to use and to accept almost any input without returning an error.
 
 The search words typed by the user in the search box defines the main "query"
 constituting the essence of the search. The + and - characters are
 treated as **mandatory** and **prohibited** modifiers for terms. Text wrapped
 in balanced quote characters (for example, "San Jose") is treated as a phrase.
-By default, all words or phrases specified by the user are treated as
-**optional** unless they are preceded by a "+" or a "-".
+All the words or phrases specified by the user have to appear in the
+dataset, unless they are preceded by a "-".
 
 .. note::
 
@@ -515,7 +513,7 @@ Simple search examples:
 * ``"european census"`` will search for all the datasets containing the phrase
   "european census".
 
-Solr applies some preprocessing and stemming when searching. Stemmers remove
+CKAN applies some preprocessing and stemming when searching. Stemmers remove
 morphological affixes from words, leaving only the word stem. This may cause,
 for example, that searching for "testing" or "tested" will show also results
 containing the word "test".
@@ -532,9 +530,10 @@ containing the word "test".
 Advanced Search
 ---------------
 
-If the query has a colon in it it will be considered a fielded search and the
-query syntax of Solr will be used to search. This will allow us to use wildcards
-"*", proximity matching "~" and general features described in Solr docs.
+If the query has a colon in it it will be considered a fielded search and a
+subset of the Lucene query syntax will be used to search: ``field:term``,
+``field:"a phrase"``, wildcards ``*`` and ``?``, ``+`` and ``-`` modifiers,
+``AND``, ``OR``, ``NOT``, parentheses and ranges ``field:[a TO b]``.
 The basic syntax is ``field:term``.
 
 Advanced Search Examples:
@@ -568,12 +567,11 @@ Advanced Search Examples:
 
 .. note::
 
-    CKAN uses Apache Solr as its search engine. For further details check the
-    `Solr documentation
-    <https://lucene.apache.org/solr/guide/6_6/searching.html#searching>`_.
-    Please note that CKAN sometimes uses different values than what is mentioned
-    in that documentation. Also note that not the whole functionality is offered
-    through the simplified search interface in CKAN or it can differ due to
+    CKAN uses the full text search of its PostgreSQL database as its search
+    engine, with a query syntax borrowed from Apache Solr. Not the whole
+    Solr functionality is offered: local parameters, function queries and
+    other advanced features are not supported. Also note that behaviour
+    can differ due to
     extensions or local development in your CKAN instance.
 
 Personalization

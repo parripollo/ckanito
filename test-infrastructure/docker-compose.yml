@@ -17,11 +17,6 @@ services:
       - default
     image: "redis:7"
 
-  ckan-solr:
-    networks:
-      - default
-    image: "ckan/ckan-solr:master"
-
   ckan:
     image: python:3.10-bookworm
     networks:

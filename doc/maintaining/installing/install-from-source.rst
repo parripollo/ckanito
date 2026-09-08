@@ -4,7 +4,9 @@
 Installing CKAN from source
 ===========================
 
-CKAN is a Python application that requires three main services: PostgreSQL, Solr and Redis.
+CKAN is a Python application that requires PostgreSQL (and, for background
+jobs, Redis). Search runs inside PostgreSQL: there is no separate search
+engine to install.
 
 This section describes how to install CKAN from source. Although
 :doc:`install-from-package` is simpler, it requires Ubuntu 20.04 64-bit or
@@ -42,7 +44,6 @@ libpq                  `The C programmer's interface to PostgreSQL <http://www.p
 pip                    `A tool for installing and managing Python packages <https://pip.pypa.io/en/stable/>`_
 python3-venv           `The Python3 virtual environment builder (or for Python 2 use 'virtualenv' instead) <https://virtualenv.pypa.io/en/latest/>`_
 Git                    `A distributed version control system <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_
-Apache Solr            `A search platform <https://lucene.apache.org/solr/>`_
 Redis                  `An in-memory data structure store <https://redis.io/>`_
 =====================  ===============================================
 
@@ -198,11 +199,15 @@ site_url
 
 .. _setting up solr:
 
--------------
-5. Setup Solr
--------------
+--------------------------
+5. Setup the search index
+--------------------------
 
-.. include:: solr.rst
+Nothing to install: CKAN indexes datasets in its own PostgreSQL database
+(see :ref:`ckan.search.backend`). The index table is created by
+``ckan db init`` / ``ckan db upgrade`` and filled with
+``ckan search-index rebuild``. The words are stemmed with the
+:ref:`ckan.search.postgres.text_config` text search configuration.
 
 
 .. _postgres-init:
@@ -297,21 +302,6 @@ Now that you've installed CKAN, you should:
 ------------------------------
 Source install troubleshooting
 ------------------------------
-
-.. _solr troubleshooting:
-
-Solr setup troubleshooting
-==========================
-
-Solr requests and errors are logged in the web server log files.
-
-* For Jetty servers, the log files are::
-
-    /var/log/jetty/<date>.stderrout.log
-
-* For Tomcat servers, they're::
-
-    /var/log/tomcat6/catalina.<date>.log
 
 AttributeError: 'module' object has no attribute 'css/main.debug.css'
 ---------------------------------------------------------------------

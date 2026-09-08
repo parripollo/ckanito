@@ -16,8 +16,6 @@ modifies, so that merge conflicts can be resolved quickly.
   (`get_backend`, `ckan.search.backend`).
 - `ckan/lib/search/backends/base.py` - `SearchBackend` contract and
   `SearchResponse`.
-- `ckan/lib/search/backends/solr.py` - the Solr code that used to be
-  spread over `ckan/lib/search/{common,index,query,__init__}.py`.
 - `ckan/lib/search/backends/postgres/__init__.py` - the PostgreSQL
   backend (`PostgresSearchBackend`): indexing into `package_search_index`,
   search, facets, lookups.
@@ -34,14 +32,28 @@ modifies, so that merge conflicts can be resolved quickly.
 - `ckan/tests/lib/search/test_backends.py`,
   `ckan/tests/lib/search/postgres/test_lucene.py`.
 
+## Upstream files and directories removed
+
+- `ckan/lib/search/backends/solr.py` (existed only during the refactor),
+  `ckan/config/solr/`, `ckanext/multilingual/solr/`, `bin/solr_init/`.
+- `pysolr` from `requirements.in` / `requirements.txt`; Solr services from
+  the GitHub workflows, `test-infrastructure/docker-compose.yml`,
+  `.devcontainer/docker-compose.yml` and the extension cookiecutter.
+- Config options `solr_url`, `solr_user`, `solr_password`, `solr_timeout`,
+  `ckan.search.solr_commit`, `ckan.search.solr_allowed_query_parsers`
+  (unknown options in an existing `ckan.ini` are ignored with a warning).
+  Env var `CKAN_SOLR_URL` is no longer mapped.
+
 ## Upstream files modified
 
 | file | what changed | why |
 |---|---|---|
-| `ckan/lib/search/common.py` | pysolr code removed; only exceptions, `is_available()` and a compat `make_connection()` remain. `SearchConnectionError` added, `SolrConnectionError` kept as alias. | Solr calls moved to the backend. |
+| `ckan/lib/search/common.py` | pysolr code removed; only exceptions and `is_available()` remain. `make_connection()` raises a clear `SearchError`. `SearchConnectionError` added, `SolrConnectionError` kept as alias. | Solr calls moved to the backend, then Solr removed. |
 | `ckan/lib/search/index.py` | `clear_index`, `index_package` (tail), `commit`, `delete_package` call `get_backend()`. | Same. |
-| `ckan/lib/search/query.py` | `get_all_entity_ids`, `get_index`, `run` (tail) call `get_backend()`; the Solr `rows+1` workaround and error translation moved to the Solr backend. | Same. |
-| `ckan/lib/search/__init__.py` | `check_solr_schema_version` is now an alias of `check_schema()` which delegates to the backend; Solr constants resolved lazily via `__getattr__`. | Same. |
+| `ckan/lib/search/query.py` | `get_all_entity_ids`, `get_index`, `run` (tail) call `get_backend()`; Solr local params (`{!...}`) are always rejected, the allow-list and its pyparsing helper are gone. | Same. |
+| `ckan/lib/search/__init__.py` | `check_schema()` delegates to the backend; `check_solr_schema_version` kept as an alias. | Same. |
+| `ckan/config/environment.py` | calls `search.check_schema()`; `CKAN_SOLR_*` env var mapping removed. | No Solr. |
+| `test-core.ini`, `test-core-ci.ini`, `.gitignore`, `pyproject.toml`, `setup.py` | Solr entries removed. | No Solr. |
 | `ckan/plugins/interfaces.py` | `ISearchBackend` interface appended. | Lets extensions register backends. |
 | `ckan/config/config_declaration.yaml` | `ckan.search.backend` (default `postgres`) and `ckan.search.postgres.text_config` added before `solr_url`. | Backend selection. |
 | `ckan/model/__init__.py` | imports `package_search_index_table` so `create_all` / `drop_all` handle it. | Index table lives in the CKAN database. |

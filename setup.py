@@ -31,7 +31,6 @@ setup(
             ("**.py", "python", None),
             ("**.js", "javascript", None),
             ("**.html", "ckan", None),
-            ("multilingual/solr/*.txt", "ignore", None),
         ],
     },
     extras_require=extras_require,

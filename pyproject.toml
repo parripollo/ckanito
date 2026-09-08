@@ -144,7 +144,6 @@ module = [
     "flask_debugtoolbar.*",
     "flask_multistatic.*",
     "passlib.*",
-    "pysolr.*",
     "repoze.*",
     "rq.*",
     "webassets.*",

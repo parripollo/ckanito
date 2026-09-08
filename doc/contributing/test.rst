@@ -39,8 +39,8 @@ Set up the testing environment
    cd test-infrastructure
    ./setup.sh
 
-This starts a docker compose environment with the supporting postgres,
-redis, and solr containers from the GitHub Actions test environment. The
+This starts a docker compose environment with the supporting postgres
+and redis containers from the GitHub Actions test environment. The
 databases are initialized, and the current ckan is installed into a
 python container.
 
@@ -116,54 +116,6 @@ You should also make sure that the :ref:`Redis database <ckan.redis.url>`
 configured in ``test-core.ini`` is different from your production database.
 
 
-.. _solr-multi-core:
-
-
-Configure Solr Multi-core
-=========================
-
-The tests assume that Solr is configured 'multi-core', whereas the default
-Solr set-up is often 'single-core'. You can ask Solr for its cores status::
-
-    curl -s 'http://127.0.0.1:8983/solr/admin/cores?action=STATUS' |python -c 'import sys;import xml.dom.minidom;s=sys.stdin.read();print(xml.dom.minidom.parseString(s).toprettyxml())'
-
-Each core will be within a child from the ``<lst name="status"`` element, and contain a ``<str name="instanceDir">`` element.
-
-You can also tell from your ckan config (assuming ckan is working)::
-
-    grep solr_url |ckan.ini|
-    # single-core: solr_url = http://127.0.0.1:8983/solr
-    # multi-core:  solr_url = http://127.0.0.1:8983/solr/ckan
-
-To enable multi-core:
-
-1. Find the ``instanceDir`` of the existing Solr core. It is found in the output of the curl command above.
-
-       e.g. ``/usr/share/solr/`` or ``/opt/solr/example/solr/collection1``
-
-2. Make a copy of that core's directory e.g.::
-
-       sudo cp -r /usr/share/solr/ /etc/solr/ckan
-
-3. Find your solr.xml. It is in the Solr Home directory given by this command::
-
-       curl -s 'http://127.0.0.1:8983/solr/admin/' | grep SolrHome
-
-4. Configure Solr with the new core by editing ``solr.xml``. The 'cores' section will have one 'core' in it already and needs the second one 'ckan' added so it looks like this::
-
-       <cores adminPath="/admin/cores" defaultCoreName="collection1">
-         <core name="collection1" instanceDir="." />
-         <core name="ckan" instanceDir="/etc/solr/ckan" />
-       </cores>
-
-5. Restart Solr by restarting Jetty (or Tomcat)::
-
-       sudo service jetty restart
-
-6. Edit your main ckan config (e.g. |ckan.ini|) and adjust the solr_url to match::
-
-       solr_url = http://127.0.0.1:8983/solr/ckan
-
 
 
 Run the tests
@@ -190,15 +142,6 @@ OperationalError
 ``OperationalError: (OperationalError) no such function: plainto_tsquery ...``
    This error usually results from running a test which involves search functionality, which requires using a PostgreSQL database, but another (such as SQLite) is configured. The particular test is either missing a `@search_related` decorator or there is a mixup with the test configuration files leading to the wrong database being used.
 
-
-SolrError
-=========
-::
-
-    SolrError: Solr responded with an error (HTTP 404): [Reason: None]
-    <html><head><meta content="text/html; charset=ISO-8859-1" http-equiv="Content-Type" /><title>Error 404 NOT_FOUND</title></head><body><h2>HTTP ERROR 404</h2><p>Problem accessing /solr/ckan/select/. Reason:<pre>    NOT_FOUND</pre></p><hr /><i><small>Powered by Jetty://</small></i>``
-
-This means your solr_url is not corresponding with your SOLR. When running tests, it is usually easiest to change your set-up to match the default solr_url in test-core.ini. Often this means switching to multi-core - see :ref:`solr-multi-core`.
 
 
 ---------------
