@@ -453,41 +453,56 @@ class Seeder:
 
     def datasets(self, vocab: dict[str, Any]) -> None:
         for data in DATASETS:
-            if self.exists("package_show", data["name"]):
-                continue
             data = dict(data)
             resources = data.pop("resources")
             frequency = data.pop("frequency")
             delete = data.pop("delete", False)
-            tags = [{"name": tag} for tag in data.pop("tags")]
-            tags.append({"name": frequency, "vocabulary_id": vocab["id"]})
-            data["tags"] = tags
-            data["groups"] = [{"name": name} for name in data["groups"]]
-            creator = "editor-ambiente" if data.get("owner_org") == \
-                "ministerio-de-ambiente" else ADMIN["name"]
-            dataset = self.action("package_create", as_user=creator, **data)
-            self.count("datasets")
+            dataset = self.exists("package_show", data["name"])
+            if dataset is None:
+                tags = [{"name": tag} for tag in data.pop("tags")]
+                tags.append({"name": frequency,
+                             "vocabulary_id": vocab["id"]})
+                data["tags"] = tags
+                data["groups"] = [{"name": name} for name in data["groups"]]
+                creator = "editor-ambiente" if data.get("owner_org") == \
+                    "ministerio-de-ambiente" else ADMIN["name"]
+                dataset = self.action("package_create", as_user=creator,
+                                      **data)
+                self.count("datasets")
+            elif dataset.get("state") == "deleted":
+                continue
+            # resources one by one, so that a run interrupted half way
+            # (e.g. datastore permissions missing) completes on the next run
+            existing = {r["name"]: r for r in dataset.get("resources", [])}
             for resource in resources:
-                self.resource(dataset["id"], resource)
+                self.resource(dataset["id"], resource,
+                              existing.get(resource["name"]))
             if delete:
                 self.action("package_delete", id=dataset["id"])
 
-    def resource(self, package_id: str, data: dict[str, Any]) -> None:
+    def resource(self, package_id: str, data: dict[str, Any],
+                 existing: Optional[dict[str, Any]] = None) -> None:
         data = dict(data)
         views = data.pop("views", [])
         datastore = data.pop("datastore", False)
         upload = data.pop("upload", None)
-        if upload:
-            filename, content = upload
-            data["upload"] = FileStorage(io.BytesIO(content), filename)
-            data["url"] = filename
-        resource = self.action("resource_create", package_id=package_id,
-                               **data)
-        self.count("resources")
-        if datastore and upload and plugins.plugin_loaded("datastore"):
+        if existing is None:
+            if upload:
+                filename, content = upload
+                data["upload"] = FileStorage(io.BytesIO(content), filename)
+                data["url"] = filename
+            resource = self.action("resource_create",
+                                   package_id=package_id, **data)
+            self.count("resources")
+        else:
+            resource = existing
+        if datastore and upload and plugins.plugin_loaded("datastore") \
+                and not resource.get("datastore_active"):
             self.datastore(resource["id"], upload[1].decode())
+        present = {v["view_type"] for v in self.action(
+            "resource_view_list", id=resource["id"])}
         for view_type in views:
-            if not plugins.plugin_loaded(view_type):
+            if not plugins.plugin_loaded(view_type) or view_type in present:
                 continue
             self.action("resource_view_create", resource_id=resource["id"],
                         title=view_type.replace("_", " ").title(),
@@ -513,6 +528,13 @@ class Seeder:
 
     def relationships(self) -> None:
         for subject, obj, rel_type, comment in RELATIONSHIPS:
+            try:
+                present = self.action("package_relationships_list",
+                                      id=subject, id2=obj, rel=rel_type)
+            except logic.NotFound:
+                present = []
+            if present:
+                continue
             self.action("package_relationship_create", subject=subject,
                         object=obj, type=rel_type, comment=comment)
             self.count("relationships")
@@ -529,11 +551,11 @@ class Seeder:
 
     def follows(self) -> None:
         for kind, follower, target in FOLLOWS:
-            try:
-                self.action("follow_%s" % kind, as_user=follower, id=target)
-                self.count("follows")
-            except logic.ValidationError:
-                pass    # already following
+            if self.action("am_following_%s" % kind, as_user=follower,
+                           id=target):
+                continue
+            self.action("follow_%s" % kind, as_user=follower, id=target)
+            self.count("follows")
 
     def run(self) -> dict[str, int]:
         self.users()
