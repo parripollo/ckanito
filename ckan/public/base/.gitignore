@@ -1,2 +1,5 @@
 **/*.min.js
 **/*.min.css
+# CKANito ships the vendored Bootstrap bundle so that no Node.js or npm is
+# needed to run or deploy (upstream regenerates it with `gulp updateVendorLibs`)
+!vendor/bootstrap/js/*.min.js

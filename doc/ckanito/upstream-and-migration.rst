@@ -24,7 +24,8 @@ Migrating a CKAN site
 =====================
 
 1. Install CKANito in place of CKAN. ``pysolr``, ``rq`` and ``redis`` are
-   no longer dependencies.
+   no longer dependencies, and neither is Node.js: the front end libraries
+   CKAN fetched with ``npm`` at build time are committed.
 2. ``ckan db upgrade``: migrations 110 and 111 add the
    ``package_search_index``, ``background_job``, ``session_store`` and
    ``kv_store`` tables and the ``ckan_english`` text search configuration.

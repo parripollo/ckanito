@@ -91,6 +91,7 @@ against CKAN may need these one-line changes:
 | `ckan/views/api.py`, `ckan/views/dataset.py`, `ckan/logic/action/get.py`, `ckan/logic/schema/__init__.py`, `ckan/lib/dictization/model_dictize.py`, `ckan/plugins/interfaces.py`, `ckan/model/meta.py`, `ckan/model/package_relationship.py`, `ckanext/tracking/` | renamed identifiers (see the table above) and comments/docstrings that described Solr behaviour. | No Solr vocabulary left in the code. |
 | `ckan/config/environment.py` | calls `search.check_schema()`; `CKAN_SOLR_*` env var mapping removed. | No Solr. |
 | `test-core.ini`, `test-core-ci.ini`, `.gitignore`, `pyproject.toml`, `setup.py` | Solr entries removed. | No Solr. |
+| `ckan/public/base/.gitignore` + `vendor/bootstrap/js/*.min.js` | the Bootstrap bundle that upstream copies with `gulp updateVendorLibs` is committed. | Running or deploying CKANito needs no Node.js or npm (they remain a developer tool for refreshing vendored libraries). |
 | `ckan/plugins/interfaces.py` | `ISearchBackend` interface appended. | Lets extensions register backends. |
 | `ckan/config/config_declaration.yaml` | `ckan.search.backend` (default `postgres`) and `ckan.search.postgres.text_config` added before `solr_url`. | Backend selection. |
 | `ckan/model/__init__.py` | imports `package_search_index_table` so `create_all` / `drop_all` handle it. | Index table lives in the CKAN database. |
