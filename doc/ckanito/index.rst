@@ -19,6 +19,7 @@ way are in ``PLAN-CKANITO.md``.
 
    architecture
    search
+   search-compatibility
    jobs
    sessions-and-kvstore
    upstream-and-migration
