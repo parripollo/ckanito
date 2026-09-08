@@ -191,6 +191,117 @@ Being precise about it:
 Nothing that CKAN's own test suite exercises was lost: the whole suite
 passes on the PostgreSQL backend.
 
+Worked examples: from query to SQL
+==================================
+
+The SQL below is what ``ckan.lib.search.backends.postgres.compiler``
+produces today for real CKAN queries (generated with the compiler, not
+written by hand; ``:pN`` are bound parameters and ``:cfg`` is the text
+search configuration). It shows the three rules that make the
+translation safe: field names never enter the SQL text unless they are
+whitelisted columns, every value is a parameter, and every predicate is
+``coalesce(..., false)`` so that ``NOT`` behaves like Lucene on missing
+fields.
+
+fq from package_search for an anonymous user
+--------------------------------------------
+
+``fq`` entry: ``+capacity:public +state:(active)``
+``fq`` entry: ``+site_id:"demo"``
+``fq`` entry: ``+permission_labels:("public")``
+
+``WHERE``::
+
+   (coalesce(capacity = :p0, false)
+      AND coalesce(state = :p1, false))
+      AND coalesce(site_id = :p2, false)
+      AND coalesce(permission_labels @> ARRAY[cast(:p3 as text)], false)
+
+Parameters: ``p0='public', p1='active', p2='demo', p3='public'``
+
+free text q (dismax mode)
+-------------------------
+
+``q`` = ``agua potable -contaminada``
+
+``WHERE``::
+
+   (fts @@ (plainto_tsquery(cast(:cfg as regconfig), :p0) && plainto_tsquery(cast(:cfg as regconfig), :p1) && (!! plainto_tsquery(cast(:cfg as regconfig), :p2))))
+
+Parameters: ``p0='agua', p1='potable', p2='contaminada'``
+
+fielded q with a phrase and a negation
+--------------------------------------
+
+``q`` = ``title:agua AND tags:"calidad del aire" -organization:x``
+
+``WHERE``::
+
+   (((to_tsvector(cast(:cfg as regconfig), coalesce(title, '')) @@ plainto_tsquery(cast(:cfg as regconfig), :p0))
+      AND coalesce(tags @> ARRAY[cast(:p1 as text)], false))
+      AND (NOT coalesce(organization = :p2, false)))
+
+Parameters: ``p0='agua', p1='calidad del aire', p2='x'``
+
+date range with date math
+-------------------------
+
+``fq`` entry: ``metadata_modified:[NOW-7DAYS/DAY TO *]``
+
+``WHERE``::
+
+   (coalesce(metadata_modified >= :p0, false))
+
+Parameters: ``p0=datetime.datetime(2026, 9, 1, 0, 0)``
+
+extras and vocabulary tags (JSONB fields)
+-----------------------------------------
+
+``fq`` entry: ``extras_periodo:2026 +vocab_frecuencia:"mensual"``
+
+``WHERE``::
+
+   ((to_tsvector(cast(:cfg as regconfig), coalesce(doc->:p1, '""'::jsonb)) @@ plainto_tsquery(cast(:cfg as regconfig), :p0))
+      AND (doc @> jsonb_build_object(:p3, cast(:p2 as text))
+      OR doc @> jsonb_build_object(:p3, jsonb_build_array(cast(:p2 as text)))))
+
+Parameters: ``p0='2026', p1='extras_periodo', p2='mensual', p3='vocab_frecuencia'``
+
+autocomplete (package_autocomplete)
+-----------------------------------
+
+``q`` = ``name_ngram:"agu" OR title_ngram:"agu" OR name:"agu" OR title:"agu"``
+
+``WHERE``::
+
+   (((coalesce(name ILIKE :p0, false)
+      OR coalesce(title ILIKE :p1, false))
+      OR coalesce(name = :p2, false))
+      OR (to_tsvector(cast(:cfg as regconfig), coalesce(title, '')) @@ phraseto_tsquery(cast(:cfg as regconfig), :p3)))
+
+Parameters: ``p0='%agu%', p1='%agu%', p2='agu', p3='agu'``
+
+Sort and facets
+---------------
+
+``sort = score desc, metadata_modified desc`` with a free text query::
+
+   ORDER BY (ts_rank_cd(fts, (plainto_tsquery(cast(:cfg as regconfig), :p0)))) DESC, metadata_modified DESC, index_id ASC
+
+``facet.field = res_format`` (array column) over ``fq = +capacity:public``::
+
+   SELECT x.v AS value, count(*) AS n FROM package_search_index, LATERAL unnest(res_format) AS x(v) WHERE coalesce(capacity = :p0, false)
+      AND x.v IS NOT NULL GROUP BY x.v HAVING count(*) >= :p1 ORDER BY n DESC, x.v ASC LIMIT :p2
+
+``facet.field = extras_periodo`` (JSONB field), ``facet.limit = -1``::
+
+   SELECT x.v AS value, count(*) AS n FROM package_search_index, LATERAL jsonb_array_elements_text(CASE WHEN jsonb_typeof(doc->:p3) = 'array' THEN doc->:p3 ELSE jsonb_build_array(doc->:p3) END) AS x(v) WHERE coalesce(capacity = :p0, false)
+      AND x.v IS NOT NULL GROUP BY x.v HAVING count(*) >= :p4 ORDER BY n DESC, x.v ASC
+
+Rows are then read with ``SELECT <fl columns> FROM package_search_index
+WHERE <where> ORDER BY <sort> LIMIT :rows OFFSET :start`` and the total
+with ``SELECT count(*) ... WHERE <where>``.
+
 Performance: why it is faster, and where to be careful
 =======================================================
 

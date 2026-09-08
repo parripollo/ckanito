@@ -81,23 +81,12 @@ Query language
 --------------
 
 ``package_search`` takes ``q``, ``fq`` and ``sort`` in Lucene syntax and
-extensions rely on that (``fq="organization:x -tags:y"``,
-``q="title:water"``). ``lucene.py`` is a hand written tokenizer and
+extensions rely on that. ``lucene.py`` is a hand written tokenizer and
 recursive descent parser for the subset CKAN and its ecosystem actually
-use:
-
-* ``word``, ``"a phrase"``, ``wild*``, ``wi?ld``, ``*:*``;
-* ``field:value``, ``field:"phrase"``, ``field:*``, ``field:(a OR b)``;
-* ranges ``field:[a TO b]``, ``field:{a TO b]``, open bounds with ``*``,
-  Lucene date math (``NOW``, ``NOW-7DAYS``, ``NOW/DAY``);
-* ``+required``, ``-excluded``, ``NOT``, ``!``, ``AND`` / ``&&``,
-  ``OR`` / ``||``, parentheses, implicit ``AND`` (CKAN sets ``q.op=AND``);
-* boosts (``term^2``) and fuzziness (``term~``) are parsed and ignored.
-
-Anything else (local params ``{!...}``, function queries, malformed
-input such as ``--foo``) raises ``SearchQueryError``, which the API maps
-to a 400 and the web UI to an "Invalid search query" page. Nothing is
-ever passed through to SQL unparsed.
+use; the exact coverage, feature by feature, is in
+:doc:`search-compatibility`. Anything outside the subset raises
+``SearchQueryError`` (a 400 in the API, an "Invalid search query" page in
+the web UI); nothing is ever passed through to SQL unparsed.
 
 How ``q`` is interpreted follows CKAN's own rule: if ``q`` contains a
 colon it is a fielded query and goes through the parser; otherwise it is
@@ -152,17 +141,11 @@ Ranking, sorting, facets
   one element array), ordered by count then value, honouring
   ``facet.limit`` (``-1`` for all) and ``facet.mincount``.
 
-Known differences from Solr
----------------------------
+Differences from Solr
+---------------------
 
-* Relevance scores differ; result sets do not.
-* Stemming is per configuration and applies to every text field alike;
-  there are no per-field analyzers.
-* No ASCII folding by default (see above).
-* ``bf``, ``boost``, ``tie``, ``mm``, ``defType`` are accepted and ignored.
-* Local params and function queries are rejected instead of executed.
-* ``text_<lang>`` fields written by ``ckanext-multilingual`` are searched
-  as ordinary text fields inside ``doc``.
+See :doc:`search-compatibility` for the full list of what is supported,
+approximated, rejected or lost, and for the performance notes.
 
 Operations
 ==========
