@@ -8,7 +8,6 @@ from pyparsing import (
     Word, QuotedString, Suppress, OneOrMore, Group, alphanums
 )
 from pyparsing.exceptions import ParseException
-import pysolr
 
 from ckan.common import asbool
 from werkzeug.datastructures import MultiDict
@@ -17,9 +16,8 @@ import ckan.logic as logic
 import ckan.model as model
 
 from ckan.common import config
-from ckan.lib.search.common import (
-    make_connection, SearchError, SearchQueryError, SolrConnectionError
-)
+from ckan.lib.search.common import SearchError, SearchQueryError
+from ckan.lib.search.backends import get_backend
 from ckan.types import Context
 
 
@@ -338,35 +336,16 @@ class PackageSearchQuery(SearchQuery):
         """
         Return a list of the IDs of all indexed packages.
         """
-        query = "*:*"
-        fq = "+site_id:\"%s\" " % config.get('ckan.site_id')
-        fq += "+state:active "
-
-        conn = make_connection()
-        data = conn.search(query, fq=fq, rows=max_results, fl='id')
-        return [r.get('id') for r in data.docs]
+        return get_backend().get_all_entity_ids(
+            config.get('ckan.site_id'), max_results=max_results)
 
     def get_index(self, reference: str) -> dict[str, Any]:
-        query = {
-            'rows': 1,
-            'q': 'name:"%s" OR id:"%s"' % (reference, reference),
-            'wt': 'json',
-            'fq': '+site_id:"%s" ' % config.get('ckan.site_id') + '+entity_type:package'}
-
-        conn = make_connection(decode_dates=False)
-        log.debug('Package query: %r', query)
-        try:
-            solr_response = conn.search(**query)
-        except pysolr.SolrError as e:
-            raise SearchError(
-                'SOLR returned an error running query: %r Error: %r' %
-                (query, e))
-
-        if solr_response.hits == 0:
+        doc = get_backend().get_by_reference(
+            reference, config.get('ckan.site_id'))
+        if doc is None:
             raise SearchError('Dataset not found in the search index: %s' %
                               reference)
-        else:
-            return cast("list[dict[str, Any]]", solr_response.docs)[0]
+        return doc
 
     def run(self,
             query: dict[str, Any],
@@ -397,16 +376,9 @@ class PackageSearchQuery(SearchQuery):
             query['q'] = "*:*"
 
         # number of results
-        rows_to_return = int(query.get('rows', 10))
         # query['rows'] should be a defaulted int, due to schema, but make
         # certain, for legacy tests
-        if rows_to_return > 0:
-            # #1683 Work around problem of last result being out of order
-            #       in SOLR 1.4
-            rows_to_query = rows_to_return + 1
-        else:
-            rows_to_query = rows_to_return
-        query['rows'] = rows_to_query
+        query['rows'] = int(query.get('rows', 10))
 
         fq = []
         if 'fq' in query:
@@ -479,34 +451,9 @@ class PackageSearchQuery(SearchQuery):
                     _check_query_parser(param, item)
 
 
-        conn = make_connection(decode_dates=False)
-        log.debug('Package query: %r', query)
-        try:
-            solr_response = conn.search(**query)
-        except pysolr.SolrError as e:
-            # Error with the sort parameter.  You see slightly different
-            # error messages depending on whether the SOLR JSON comes back
-            # or Jetty gets in the way converting it to HTML - not sure why
-            #
-            if e.args and isinstance(e.args[0], str):
-                if "Can't determine a Sort Order" in e.args[0] or \
-                        "Can't determine Sort Order" in e.args[0] or \
-                        'Unknown sort order' in e.args[0]:
-                    raise SearchQueryError('Invalid "sort" parameter')
-
-                if "Failed to connect to server" in e.args[0] or \
-                        "Connection to server" in e.args[0]:
-                    log.warning("Connection Error: Failed to connect to Solr server.")
-                    raise SolrConnectionError("Solr returned an error while searching.")
-
-            raise SearchError('SOLR returned an error running query: %r Error: %r' %
-                              (query, e))
-        self.count = solr_response.hits
-        self.results = cast("list[Any]", solr_response.docs)
-
-
-        # #1683 Filter out the last row that is sometimes out of order
-        self.results = self.results[:rows_to_return]
+        response = get_backend().search(query)
+        self.count = response.count
+        self.results = cast("list[Any]", response.docs)
 
         # get any extras and add to 'extras' dict
         for result in self.results:
@@ -522,10 +469,7 @@ class PackageSearchQuery(SearchQuery):
         if query.get('fl') in ['id', 'name']:
             self.results = [r.get(query['fl']) for r in self.results]
 
-        # get facets and convert facets list to a dict
-        self.facets = solr_response.facets.get('facet_fields', {})
-        for field, values in self.facets.items():
-            self.facets[field] = dict(zip(values[0::2], values[1::2]))
+        self.facets = response.facets
 
         return {'results': self.results, 'count': self.count}
 

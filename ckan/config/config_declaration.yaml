@@ -916,6 +916,18 @@ groups:
 
           .. note:: If you change this value, you need to rebuild the search index.
 
+      - key: ckan.search.backend
+        default: solr
+        example: mymodule.search:MyBackend
+        description: |
+          Search backend used to index and query datasets. Built-in
+          backends: ``solr``. Extensions can register more through the
+          ``ISearchBackend`` plugin interface, and a dotted path to a
+          ``SearchBackend`` subclass (``package.module:ClassName``) is
+          also accepted.
+
+          .. note:: If you change this value, you need to rebuild the search index.
+
       - key: solr_url
         placeholder: http://127.0.0.1:8983/solr/ckan
         required: true

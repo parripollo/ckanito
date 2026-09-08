@@ -1,7 +1,6 @@
 # encoding: utf-8
 from __future__ import annotations
 
-import socket
 import string
 import logging
 import collections
@@ -11,11 +10,10 @@ from dateutil.parser import parse, ParserError as DateParserError
 from typing import Any, NoReturn, Optional
 
 import six
-import pysolr
 from ckan.common import config
 
 
-from .common import SearchIndexError, make_connection
+from .backends import get_backend
 import ckan.model as model
 from ckan.plugins import (PluginImplementations,
                           IPackageController)
@@ -47,19 +45,7 @@ def escape_xml_illegal_chars(val: str, replacement: str='') -> str:
 
 
 def clear_index() -> None:
-    conn = make_connection()
-    query = "+site_id:\"%s\"" % (config.get('ckan.site_id'))
-    try:
-        conn.delete(q=query)
-        conn.commit()
-    except socket.error as e:
-        err = 'Could not connect to SOLR %r: %r' % (conn.url, e)
-        log.error(err)
-        raise SearchIndexError(err)
-    except pysolr.SolrError as e:
-        err = 'SOLR %r exception: %r' % (conn.url, e)
-        log.error(err)
-        raise SearchIndexError(err)
+    get_backend().clear(config.get('ckan.site_id'))
 
 
 class SearchIndex(object):
@@ -276,44 +262,15 @@ class PackageSearchIndex(SearchIndex):
         pkg_dict['permission_labels'] = labels.get_dataset_labels(
             dataset) if dataset else [] # TestPackageSearchIndex-workaround
 
-        # send to solr:
-        conn = None
-        try:
-            conn = make_connection()
-            commit = not defer_commit
-            if not config.get('ckan.search.solr_commit'):
-                commit = False
-            conn.add(docs=[pkg_dict], commit=commit)
-        except pysolr.SolrError as e:
-            msg = 'Solr returned an error: {0}'.format(
-                e.args[0][:1000] # limit huge responses
-            )
-            raise SearchIndexError(msg)
-        except socket.error as e:
-            assert conn
-            err = 'Could not connect to Solr using {0}: {1}'.format(
-                conn.url, str(e))
-            log.error(err)
-            raise SearchIndexError(err)
+        # send to the search backend:
+        get_backend().index(pkg_dict, defer_commit=defer_commit)
 
         commit_debug_msg = 'Not committed yet' if defer_commit else 'Committed'
         log.debug('Updated index for %s [%s]', pkg_dict.get('name'), commit_debug_msg)
 
     def commit(self) -> None:
-        try:
-            conn = make_connection()
-            conn.commit(waitSearcher=False)
-        except Exception as e:
-            log.exception(e)
-            raise SearchIndexError(e)
+        get_backend().commit()
 
     def delete_package(self, pkg_dict: dict[str, Any]) -> None:
-        conn = make_connection()
-        query = "+%s:%s AND +(id:\"%s\" OR name:\"%s\") AND +site_id:\"%s\"" % \
-                (TYPE_FIELD, PACKAGE_TYPE, pkg_dict.get('id'), pkg_dict.get('id'), config.get('ckan.site_id'))
-        try:
-            commit = config.get('ckan.search.solr_commit')
-            conn.delete(q=query, commit=commit)
-        except Exception as e:
-            log.exception(e)
-            raise SearchIndexError(e)
+        get_backend().delete(
+            str(pkg_dict.get('id')), config.get('ckan.site_id'))

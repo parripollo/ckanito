@@ -70,6 +70,7 @@ __all__ = [
     "IBlueprint",
     "IPermissionLabels",
     "IForkObserver",
+    "ISearchBackend",
     "IApiToken",
     "IClick",
     "ISignal",
@@ -2527,3 +2528,24 @@ class INotifier(Interface):
 
         """
         return False
+
+
+class ISearchBackend(Interface):
+    u'''
+    Register additional search backends.
+
+    A search backend is a subclass of
+    :class:`ckan.lib.search.backends.base.SearchBackend` that indexes and
+    queries datasets on a particular engine. The backend in use is chosen
+    with the ``ckan.search.backend`` config option, which accepts any of
+    the names returned by this interface.
+    '''
+
+    def register_search_backends(self) -> dict[str, type]:
+        u'''
+        Return a mapping of backend name to backend class.
+
+        :returns: ``{name: SearchBackend subclass}``
+        :rtype: dict
+        '''
+        return {}

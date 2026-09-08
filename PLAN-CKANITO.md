@@ -511,5 +511,24 @@ Tests/CI:
   (`CKAN_SQLALCHEMY_URL`, `CKAN_DATASTORE_*_URL`, `CKAN_SOLR_URL`,
   `CKAN_REDIS_URL`) que CKAN ya mapea en `ckan/config/environment.py`.
   Roles/DBs creados como en `test-infrastructure/init_environment.sh`.
-- Correr: `. .venv/bin/activate` + exportar las variables + `pytest
-  --ckan-ini=test-core.ini -p no:cacheprovider --log-disable=ckan ...`.
+- Correr: `. .venv/bin/activate` y `TZ=UTC pytest
+  --ckan-ini=test-core-local.ini -p no:cacheprovider --log-disable=ckan ...`.
+  `test-core-local.ini` es un overlay de `test-core.ini` con las URLs de
+  docker (no trackeado; en `.git/info/exclude`). NO usar variables
+  `CKAN_*` de entorno: `test_config.py` y `test_environment.py` exigen que
+  no esten.
+- Gotchas: `ckan datastore set-permissions | psql` hay que correrlo con
+  Solr ya arriba (carga el environment; si Solr no responde falla en
+  silencio y despues fallan ~340 tests de datastore por
+  `populate_full_text_trigger() does not exist`). `TZ=UTC` porque
+  `ckanext/expire_api_token` mezcla `utcnow` con hora local y falla en
+  cualquier zona distinta de UTC (bug upstream, no lo tocamos).
+
+### Baseline (2026-09-08, upstream 0731a7a4ab intacto)
+
+- pytest: 3555 tests, 0 fallos reales (1 deseleccionado
+  `test_building_the_docs` como en CI, 2 skipped). Primera corrida completa
+  15 min; los 226 fallos iniciales fueron ambiente (permisos datastore y
+  variables `CKAN_*`), resueltos y re-verificados.
+- ruff: limpio. pyright: ver `baseline-pyright.txt` en scratch (2 avisos
+  de `pkg_resources` en el venv de uv; en CI con pip no aparecen).

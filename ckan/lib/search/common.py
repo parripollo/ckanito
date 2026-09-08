@@ -1,18 +1,10 @@
 # encoding: utf-8
 from __future__ import annotations
 
-import datetime
 import logging
-import re
 from typing import Any
 
-import pysolr
-import simplejson
-
-from six.moves.urllib.parse import quote_plus  # type: ignore
-from pysolr import Solr
-
-from ckan.common import config
+from ckan.common import config  # type: ignore  # re-exported for compatibility
 
 log = logging.getLogger(__name__)
 
@@ -29,61 +21,33 @@ class SearchQueryError(SearchError):
     pass
 
 
-class SolrConnectionError(Exception):
+class SearchConnectionError(Exception):
     pass
+
+
+# Kept for extensions written against CKAN
+SolrConnectionError = SearchConnectionError
 
 
 def is_available() -> bool:
     """
-    Return true if we can successfully connect to Solr.
+    Return true if we can successfully connect to the search backend.
     """
+    from ckan.lib.search.backends import get_backend
     try:
-        conn = make_connection()
-        conn.search(q="*:*", rows=1)
+        return get_backend().is_available()
     except Exception as e:
         log.exception(e)
         return False
-    return True
 
 
-def make_connection(decode_dates: bool = True) -> Solr:
-    solr_url: str = config["solr_url"]
-    solr_user: str | None = config["solr_user"]
-    solr_password: str | None = config["solr_password"]
+def make_connection(decode_dates: bool = True) -> Any:
+    """
+    Return a raw connection to the Solr server.
 
-    if solr_url and solr_user and solr_password:
-        # Rebuild the URL with the username/password
-        match = re.search('http(?:s)?://', solr_url)
-        assert match
-        protocol = match.group()
-        solr_url = re.sub(protocol, '', solr_url)
-        solr_url = "{}{}:{}@{}".format(protocol,
-                                       quote_plus(solr_user),
-                                       quote_plus(solr_password),
-                                       solr_url)
-
-    timeout = config.get('solr_timeout')
-
-    if decode_dates:
-        decoder = simplejson.JSONDecoder(object_hook=solr_datetime_decoder)
-        return pysolr.Solr(solr_url, decoder=decoder, timeout=timeout)
-    else:
-        return pysolr.Solr(solr_url, timeout=timeout)
-
-
-def solr_datetime_decoder(d: dict[str, Any]) -> dict[str, Any]:
-    for k, v in d.items():
-        if isinstance(v, str):
-            possible_datetime = re.search(pysolr.DATETIME_REGEX, v)
-            if possible_datetime:
-                date_values: dict[str, Any] = possible_datetime.groupdict()
-                for dk, dv in date_values.items():
-                    date_values[dk] = int(dv)
-
-                d[k] = datetime.datetime(date_values['year'],
-                                         date_values['month'],
-                                         date_values['day'],
-                                         date_values['hour'],
-                                         date_values['minute'],
-                                         date_values['second'])
-    return d
+    Only meaningful with the ``solr`` backend. It is kept so that
+    extensions that reach into Solr directly keep importing; new code
+    should go through :func:`ckan.lib.search.backends.get_backend`.
+    """
+    from ckan.lib.search.backends.solr import make_connection as _connect
+    return _connect(decode_dates)
