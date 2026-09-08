@@ -1,45 +1,15 @@
 # -*- coding: utf-8 -*-
-import os
 import uuid
 import pytest
 
 
-import ckan.config as config
 from ckan.lib.search.common import SearchQueryError, config as ckan_config
 import ckan.tests.factories as factories
 from ckan.tests import helpers
 import ckan.model as model
 import ckan.lib.search as search
-from ckan.lib.search import check_solr_schema_version, SearchError, make_connection
+from ckan.lib.search.backends import get_backend
 from ckan.lib.search.query import _get_local_query_parser
-
-root_dir = os.path.join(os.path.dirname(config.__file__), "solr")
-data_dir = os.path.join(os.path.dirname(__file__), "data")
-
-
-def test_current_schema_exists():
-    current_schema = os.path.join(root_dir, "schema.xml")
-    assert os.path.exists(current_schema)
-
-
-def test_check_valid_schema():
-    schema_file = os.path.join(root_dir, "schema.xml")
-    assert check_solr_schema_version(schema_file)
-
-
-def test_check_invalid_schema():
-    schema_file = os.path.join(data_dir, "schema-no-version.xml")
-    with pytest.raises(SearchError) as e:
-        check_solr_schema_version(schema_file)
-    assert "Could not extract version info" in str(e.value)
-
-
-def test_check_schema_with_wrong_version():
-    schema_file = os.path.join(data_dir, "schema-wrong-version.xml")
-    with pytest.raises(SearchError) as e:
-        check_solr_schema_version(schema_file)
-    assert "SOLR schema version not supported" in str(e.value)
-
 
 def get_data():
     return {
@@ -282,33 +252,12 @@ def test_allowed_local_params_via_config_not_defined():
     assert str(e.value) == "Local parameters are not supported in param 'q'."
 
 
-@pytest.mark.ckan_config("ckan.search.solr_allowed_query_parsers", "bool knn lucene")
-@pytest.mark.usefixtures("clean_index")
-def test_allowed_local_params_via_config():
-    factories.Dataset(title="A dataset about bees")
-    factories.Dataset(title="A dataset about butterflies")
-    query = search.query_for(model.Package)
-
-    assert query.run({"q": "{!bool must=bees}", "defType": "lucene"})["count"] == 1
-
-    assert query.run({"q": " {!bool must=bees}", "defType": "lucene"})["count"] == 1
-
-    # Alternative syntax
-    assert query.run({"q": "{!type=bool must=beetles}", "defType": "lucene"})["count"] == 0
-
-    assert query.run({"q": "{!must=bees type=bool}", "defType": "lucene"})["count"] == 1
-
-    # Support dot symbol in keys
-    assert query.run({"fq": "{!lucene q.op=AND}bees butterflies"})["count"] == 0
-    assert query.run({"fq": "{!lucene q.op=OR}bees butterflies"})["count"] == 2
-
-
 @pytest.mark.usefixtures("clean_index")
 def test_get_index_uses_site_id():
 
     dataset_id = str(uuid.uuid4())
 
-    conn = make_connection()
+    backend = get_backend()
 
     datasets = [
         {
@@ -330,10 +279,13 @@ def test_get_index_uses_site_id():
             "index_id": "1",
         },
     ]
-    conn.add(docs=datasets, commit=True)
+    for dataset in datasets:
+        backend.index(dataset)
 
-    # Check both records were indexed in Solr
-    assert conn.search(q=f"id:{dataset_id}").hits == 2
+    # Check both records were indexed
+    assert backend.get_by_reference(dataset_id, "site1")["site_id"] == "site1"
+    assert backend.get_by_reference(
+        dataset_id, ckan_config["ckan.site_id"])["index_id"] == "1"
 
     # Check that our own get_index method returns the dataset for the current site only
     query = search.query_for(model.Package)

@@ -6,20 +6,19 @@ import json
 from unittest import mock
 import pytest
 import six
+from dateutil.parser import isoparse
 from ckan.common import config
 import ckan.lib.search as search
+import ckan.model as model
 from ckan.tests import factories, helpers
 
 
-@pytest.mark.skipif(not search.is_available(), reason="Solr not reachable")
+@pytest.mark.skipif(not search.is_available(),
+                    reason="Search backend not reachable")
 @pytest.mark.usefixtures("clean_index")
 class TestSearchIndex(object):
     @classmethod
     def setup_class(cls):
-
-        cls.solr_client = search.make_connection()
-
-        cls.fq = ' +site_id:"%s" ' % config["ckan.site_id"]
 
         cls.package_index = search.PackageSearchIndex()
 
@@ -37,24 +36,30 @@ class TestSearchIndex(object):
         cls.base_package_dict['with_custom_schema'] = dict(
             cls.base_package_dict)
 
-    def test_solr_is_available(self):
-        assert self.solr_client.search("*:*") is not None
+    @staticmethod
+    def _search(q):
+        """Documents (all stored fields) matching ``q`` for this site."""
+        query = search.query_for(model.Package)
+        return query.run({"q": q, "fl": "*"})["results"]
+
+    def test_search_backend_is_available(self):
+        assert search.is_available()
 
     def test_search_all(self):
         self.package_index.index_package(self.base_package_dict)
-        assert len(self.solr_client.search(q="*:*", fq=self.fq)) == 1
+        assert len(self._search("*:*")) == 1
 
     def test_index_basic(self):
 
         self.package_index.index_package(self.base_package_dict)
 
-        response = self.solr_client.search(q="name:monkey", fq=self.fq)
+        response = self._search("name:monkey")
 
         assert len(response) == 1
 
-        assert response.docs[0]["id"] == "test-index"
-        assert response.docs[0]["name"] == "monkey"
-        assert response.docs[0]["title"] == "Monkey"
+        assert response[0]["id"] == "test-index"
+        assert response[0]["name"] == "monkey"
+        assert response[0]["title"] == "Monkey"
 
         index_id = hashlib.md5(
             six.b("{0}{1}".format(
@@ -62,7 +67,7 @@ class TestSearchIndex(object):
             ))
         ).hexdigest()
 
-        assert response.docs[0]["index_id"] == index_id
+        assert response[0]["index_id"] == index_id
 
     def test_no_state_no_index(self):
         pkg_dict = self.base_package_dict.copy()
@@ -70,7 +75,7 @@ class TestSearchIndex(object):
 
         self.package_index.index_package(pkg_dict)
 
-        response = self.solr_client.search(q="name:monkey", fq=self.fq)
+        response = self._search("name:monkey")
 
         assert len(response) == 0
 
@@ -80,7 +85,7 @@ class TestSearchIndex(object):
 
         self.package_index.clear()
 
-        response = self.solr_client.search(q="name:monkey", fq=self.fq)
+        response = self._search("name:monkey")
         assert len(response) == 0
 
     def test_delete_package(self):
@@ -90,16 +95,16 @@ class TestSearchIndex(object):
         pkg_dict.update({"id": "test-index-2", "name": "monkey2"})
         self.package_index.index_package(pkg_dict)
 
-        response = self.solr_client.search(q="title:Monkey", fq=self.fq)
+        response = self._search("title:Monkey")
         assert len(response) == 2
-        response_ids = sorted([x["id"] for x in response.docs])
+        response_ids = sorted([x["id"] for x in response])
         assert response_ids == ["test-index", "test-index-2"]
 
         self.package_index.delete_package(pkg_dict)
 
-        response = self.solr_client.search(q="title:Monkey", fq=self.fq)
+        response = self._search("title:Monkey")
         assert len(response) == 1
-        response_ids = sorted([x["id"] for x in response.docs])
+        response_ids = sorted([x["id"] for x in response])
         assert response_ids == ["test-index"]
 
     def test_index_illegal_xml_chars(self):
@@ -113,10 +118,10 @@ class TestSearchIndex(object):
         )
         self.package_index.index_package(pkg_dict)
 
-        response = self.solr_client.search(q="name:monkey", fq=self.fq)
+        response = self._search("name:monkey")
 
         assert len(response) == 1
-        assert response.docs[0]["title"] == u"\u00c3altimo n\u00famero penguin"
+        assert response[0]["title"] == u"\u00c3altimo n\u00famero penguin"
 
     def test_index_date_field(self):
 
@@ -133,20 +138,24 @@ class TestSearchIndex(object):
 
         self.package_index.index_package(pkg_dict)
 
-        response = self.solr_client.search(q="name:monkey", fq=self.fq)
+        response = self._search("name:monkey")
 
         assert len(response) == 1
 
-        assert isinstance(response.docs[0]["test_date"], datetime.datetime)
+        assert isinstance(isoparse(response[0]["test_date"]),
+                          datetime.datetime)
         assert (
-            response.docs[0]["test_date"].strftime("%Y-%m-%d") == "2014-03-22"
+            isoparse(response[0]["test_date"]).strftime("%Y-%m-%d")
+            == "2014-03-22"
         )
         assert (
-            response.docs[0]["test_tim_date"].strftime("%Y-%m-%d %H:%M:%S")
+            isoparse(response[0]["test_tim_date"]).strftime(
+                "%Y-%m-%d %H:%M:%S")
             == "2014-03-22 05:42:14"
         )
         assert (
-            response.docs[0]["test_full_iso_date"].strftime("%Y-%m-%d %H:%M:%S")
+            isoparse(response[0]["test_full_iso_date"]).strftime(
+                "%Y-%m-%d %H:%M:%S")
             == "2019-10-10 01:15:00"
         )
 
@@ -164,12 +173,12 @@ class TestSearchIndex(object):
 
         self.package_index.index_package(pkg_dict)
 
-        response = self.solr_client.search(q="name:monkey", fq=self.fq)
+        response = self._search("name:monkey")
 
         assert len(response) == 1
 
-        assert "test_empty_date" not in response.docs[0]
-        assert "test_none_date" not in response.docs[0]
+        assert "test_empty_date" not in response[0]
+        assert "test_none_date" not in response[0]
 
     def test_index_date_field_wrong_value(self):
 
@@ -187,14 +196,14 @@ class TestSearchIndex(object):
 
         self.package_index.index_package(pkg_dict)
 
-        response = self.solr_client.search(q="name:monkey", fq=self.fq)
+        response = self._search("name:monkey")
 
         assert len(response) == 1
 
-        assert "test_wrong_date" not in response.docs[0]
-        assert "test_another_wrong_date" not in response.docs[0]
-        assert "test_yet_another_wrong_date" not in response.docs[0]
-        assert "test_yet_another_very_wrong_date" not in response.docs[0]
+        assert "test_wrong_date" not in response[0]
+        assert "test_another_wrong_date" not in response[0]
+        assert "test_yet_another_wrong_date" not in response[0]
+        assert "test_yet_another_very_wrong_date" not in response[0]
 
     def test_index_date_field_empty_value(self):
 
@@ -203,11 +212,11 @@ class TestSearchIndex(object):
 
         self.package_index.index_package(pkg_dict)
 
-        response = self.solr_client.search(q="name:monkey", fq=self.fq)
+        response = self._search("name:monkey")
 
         assert len(response) == 1
 
-        assert "test_empty_date" not in response.docs[0]
+        assert "test_empty_date" not in response[0]
 
 
 class TestPackageSearchIndex:
@@ -260,7 +269,7 @@ class TestPackageSearchIndex:
 
         # At root level are the fields that SOLR uses
         assert indexed_pkg["name"] == "river-quality"
-        assert indexed_pkg["metadata_modified"] == "2014-06-10T08:24:12.782Z"
+        assert indexed_pkg["metadata_modified"] == "2014-06-10T08:24:12.782257Z"
         assert indexed_pkg["entity_type"] == "package"
         assert indexed_pkg["dataset_type"] == "dataset"
 

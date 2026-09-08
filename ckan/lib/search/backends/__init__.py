@@ -25,9 +25,10 @@ __all__ = ["SearchBackend", "SearchResponse", "get_backend",
 
 log = logging.getLogger(__name__)
 
-DEFAULT_BACKEND = "solr"
+DEFAULT_BACKEND = "postgres"
 
 BUILTIN_BACKENDS: dict[str, str] = {
+    "postgres": "ckan.lib.search.backends.postgres:PostgresSearchBackend",
     "solr": "ckan.lib.search.backends.solr:SolrSearchBackend",
 }
 

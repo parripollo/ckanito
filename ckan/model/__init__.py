@@ -105,6 +105,9 @@ from ckan.model.api_token import (
     ApiToken,
 )
 
+from ckan.model.package_search_index import (
+    package_search_index_table,
+)
 from ckan.model.file import File
 from ckan.model.file_owner import FileOwner, FileOwnerTransferHistory
 
@@ -132,6 +135,7 @@ __all__ = [
     "init_model", "Repository",
     "repo", "is_id", "parse_db_config",
     "File", "FileOwner", "FileOwnerTransferHistory",
+    "package_search_index_table",
 ]
 
 log = logging.getLogger(__name__)

@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from ckan.common import config  # type: ignore  # re-exported for compatibility
+from ckan.common import config  # type: ignore # noqa: F401 (re-exported)
 
 log = logging.getLogger(__name__)
 

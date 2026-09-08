@@ -348,9 +348,11 @@ class TestPackageQuery:
         assert result["results"] == ["verycomplexnameoffirstdataset"]
 
     def test_name_multiple_results(self):
-        factories.Dataset(name="first-record")
-        factories.Dataset(name="second-record")
-        factories.Dataset(name="third-dataset")
+        # explicit texts: the factory defaults are random sentences that
+        # could contain the searched word
+        factories.Dataset(name="first-record", title="First", notes="One")
+        factories.Dataset(name="second-record", title="Second", notes="Two")
+        factories.Dataset(name="third-dataset", title="Third", notes="Three")
         result = search.query_for(model.Package).run({"q": u"record"})
         assert set(result["results"]) == {"first-record", "second-record"}
 

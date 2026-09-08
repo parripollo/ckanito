@@ -68,10 +68,18 @@ class TestPackageNew(object):
 
         assert plugin.id_in_dict
 
-    @pytest.mark.ckan_config("solr_url", "http://example.com/badsolrurl")
     @pytest.mark.usefixtures("clean_index")
-    def test_new_indexerror(self, app, user):
-        new_package_name = u"new-package-missing-solr"
+    def test_new_indexerror(self, app, user, monkeypatch):
+        from ckan.lib.search.backends import SearchBackend
+        from ckan.lib.search.common import SearchIndexError
+
+        class _BrokenBackend(SearchBackend):
+            def index(self, doc, defer_commit=False):
+                raise SearchIndexError("search engine down")
+
+        monkeypatch.setattr(
+            "ckan.lib.search.index.get_backend", _BrokenBackend)
+        new_package_name = u"new-package-missing-search-index"
         offset = url_for("dataset.new")
         headers = {"Authorization": user["token"]}
         res = app.post(
@@ -1530,20 +1538,17 @@ class TestSearch(object):
                 "in ckan/lib/search/query.py:run"
             )
 
-    def test_search_solr_syntax_error(self, app):
+    def test_search_syntax_error(self, app):
         factories.Dataset()
 
-        # SOLR raises SyntaxError when it can't parse q (or other fields?).
-        # Whilst this could be due to a bad user input, it could also be
-        # because CKAN mangled things somehow and therefore we flag it up to
-        # the administrator and give a meaningless error, just in case
+        # A query the search backend cannot parse is rejected with a 400
+        # (it cannot be produced through the web interface, only by hand
+        # or by spiders)
         offset = url_for("dataset.search") + "?q=--included"
-        search_response = app.get(offset)
+        search_response = app.get(offset, status=400)
 
-        search_response_html = BeautifulSoup(search_response.data)
-        err_msg = search_response_html.select("#search-error")
-        err_msg = "".join([n.text for n in err_msg])
-        assert "error while searching" in err_msg
+        assert "Invalid search query" in search_response.get_data(
+            as_text=True)
 
     def test_search_plugin_hooks(self, app):
         with p.use_plugin("test_package_controller_plugin") as plugin:

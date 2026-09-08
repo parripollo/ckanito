@@ -18,7 +18,21 @@ modifies, so that merge conflicts can be resolved quickly.
   `SearchResponse`.
 - `ckan/lib/search/backends/solr.py` - the Solr code that used to be
   spread over `ckan/lib/search/{common,index,query,__init__}.py`.
-- `ckan/tests/lib/search/test_backends.py`.
+- `ckan/lib/search/backends/postgres/__init__.py` - the PostgreSQL
+  backend (`PostgresSearchBackend`): indexing into `package_search_index`,
+  search, facets, lookups.
+- `ckan/lib/search/backends/postgres/lucene.py` - parser for the Lucene
+  query subset accepted by `package_search` (`q`, `fq`).
+- `ckan/lib/search/backends/postgres/compiler.py` - AST to SQL, field
+  typing (typed columns vs JSONB), free text, ranges and Solr date math,
+  sort, facets.
+- `ckan/model/package_search_index.py` - the index table.
+- `ckan/migration/versions/110_c1a3e5f7b9d2_create_package_search_index_table.py`
+  - creates the table and the `ckan_english` text search configuration
+  (English stemming, no stop words, like the Solr schema).
+- `ckan/cli/ckanito.py` - `ckan ckanito seed-demo`.
+- `ckan/tests/lib/search/test_backends.py`,
+  `ckan/tests/lib/search/postgres/test_lucene.py`.
 
 ## Upstream files modified
 
@@ -29,4 +43,7 @@ modifies, so that merge conflicts can be resolved quickly.
 | `ckan/lib/search/query.py` | `get_all_entity_ids`, `get_index`, `run` (tail) call `get_backend()`; the Solr `rows+1` workaround and error translation moved to the Solr backend. | Same. |
 | `ckan/lib/search/__init__.py` | `check_solr_schema_version` is now an alias of `check_schema()` which delegates to the backend; Solr constants resolved lazily via `__getattr__`. | Same. |
 | `ckan/plugins/interfaces.py` | `ISearchBackend` interface appended. | Lets extensions register backends. |
-| `ckan/config/config_declaration.yaml` | `ckan.search.backend` option added before `solr_url`. | Backend selection. |
+| `ckan/config/config_declaration.yaml` | `ckan.search.backend` (default `postgres`) and `ckan.search.postgres.text_config` added before `solr_url`. | Backend selection. |
+| `ckan/model/__init__.py` | imports `package_search_index_table` so `create_all` / `drop_all` handle it. | Index table lives in the CKAN database. |
+| `setup.cfg` | `ckanito` entry in `ckan.click_command`. | Registers `ckan ckanito`. |
+| `ckan/tests/lib/search/test_index.py`, `test_search.py`, `test_query.py`, `ckan/tests/cli/test_db.py`, `ckan/tests/controllers/test_api.py`, `test_package.py` | tests that reached into pysolr now go through the backend interface or a stub backend; Solr-only tests (schema XML version, local params) removed; one test made deterministic; a malformed query now yields a 400 instead of a generic error page. | Tests must not depend on a particular engine. |

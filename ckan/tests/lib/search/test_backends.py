@@ -5,6 +5,7 @@ import ckan.plugins as p
 from ckan.common import config
 from ckan.lib.search import SearchError, backends
 from ckan.lib.search.backends.base import SearchBackend, SearchResponse
+from ckan.lib.search.backends.postgres import PostgresSearchBackend
 from ckan.lib.search.backends.solr import SolrSearchBackend
 
 
@@ -19,8 +20,8 @@ class _BackendPlugin(p.SingletonPlugin):
         return {"dummy": _DummyBackend}
 
 
-def test_default_backend_is_solr():
-    assert isinstance(backends.get_backend(), SolrSearchBackend)
+def test_default_backend_is_postgres():
+    assert isinstance(backends.get_backend(), PostgresSearchBackend)
 
 
 def test_explicit_name():

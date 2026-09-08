@@ -917,14 +917,29 @@ groups:
           .. note:: If you change this value, you need to rebuild the search index.
 
       - key: ckan.search.backend
-        default: solr
+        default: postgres
         example: mymodule.search:MyBackend
         description: |
           Search backend used to index and query datasets. Built-in
-          backends: ``solr``. Extensions can register more through the
-          ``ISearchBackend`` plugin interface, and a dotted path to a
-          ``SearchBackend`` subclass (``package.module:ClassName``) is
-          also accepted.
+          backends: ``postgres`` (full text search on the CKAN database,
+          no extra services needed) and ``solr``. Extensions can register
+          more through the ``ISearchBackend`` plugin interface, and a
+          dotted path to a ``SearchBackend`` subclass
+          (``package.module:ClassName``) is also accepted.
+
+          .. note:: If you change this value, you need to rebuild the search index.
+
+      - key: ckan.search.postgres.text_config
+        default: ckan_english
+        example: spanish
+        description: |
+          PostgreSQL text search configuration (see ``\dF`` in ``psql``)
+          used by the ``postgres`` search backend to stem and match words,
+          both when indexing and when searching. The default
+          ``ckan_english`` is created by the CKAN migrations: English
+          stemming without stop words, which is what CKAN's Solr schema
+          did. Any configuration installed in the database can be used
+          (``spanish``, ``simple`` to disable stemming, ...).
 
           .. note:: If you change this value, you need to rebuild the search index.
 

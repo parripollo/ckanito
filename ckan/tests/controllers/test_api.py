@@ -372,8 +372,15 @@ def test_header_based_auth_default_post(app):
     assert res.status_code == 200
 
 
-@pytest.mark.ckan_config("solr_url", "https://xxxx/notofund")
-def test_package_search_connection_errors(app):
+def test_package_search_connection_errors(app, monkeypatch):
+    from ckan.lib.search.backends import SearchBackend
+    from ckan.lib.search.common import SearchConnectionError
+
+    class _DownBackend(SearchBackend):
+        def search(self, params):
+            raise SearchConnectionError("search engine down")
+
+    monkeypatch.setattr("ckan.lib.search.query.get_backend", _DownBackend)
 
     res = app.get(
         url_for("api.action", logic_function="package_search", ver=3),

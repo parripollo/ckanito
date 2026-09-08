@@ -425,6 +425,20 @@ PR de CKAN" depende por completo de mantener el delta chico y aislado
 en cada merge; por eso la regla de codigo nuevo en archivos nuevos no es
 estetica, es el costo de mantenimiento futuro.
 
+## 7b. Entregables pedidos ademas del codigo
+
+- **Instancia local con datos** (pedido 2026-09-08): CKAN sin extensiones de
+  terceros corriendo en local, con un comando reproducible de carga
+  (`ckan ckanito seed-demo`) que crea usuarios, organizaciones, grupos,
+  vocabulario, datasets (publicos, privados, borrador, eliminado),
+  recursos por URL y subidos en varios formatos, tablas de datastore,
+  vistas, relaciones, colaboradores y seguidores.
+- **Explicacion tecnica de los cambios** (pedido 2026-09-08, para el
+  final): documento en `doc/ckanito/` que explique como se implemento cada
+  cambio y por que (contrato de backends, mapeo Solr -> PostgreSQL y sus
+  limites, jobs/sesiones/kv, archivos upstream tocados, tests adaptados),
+  para que expertos en CKAN evaluen el codigo con contexto.
+
 ## 8. Orden de trabajo inmediato
 
 1. Vos: crear repo, confirmar rama base, credenciales de Postgres.
