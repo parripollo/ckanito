@@ -400,6 +400,72 @@ CKAN y CKANito con un set de queries grabadas (mismo `count`, mismos
 `id`s con tolerancia de orden en relevancia). Medir tiempos con 10k/100k
 datasets.
 
+## 3b. Fase 7: replica de datos.gob.ar (caso real de extensiones)
+
+Pedido 2026-09-08. Objetivo: una instancia CKANito que replique el
+catalogo de datos.gob.ar (1278 datasets, CKAN 2.11.5) alimentada por
+cosecha, y usarla para revisar una por una las extensiones que ese portal
+usa hasta que sean compatibles. Es el "ejemplo real" del proyecto.
+
+**Que corre datos.gob.ar hoy** (`status_show`, 2026-09-08): image_view,
+text_view, datatables_view, datastore, datapusher, spatial_metadata,
+spatial_query, resource_proxy, geo_view, geojson_view, wmts_view,
+shp_view, gobar_theme, series_explorer, harvest, gobar_ckan_harvester,
+ckan_harvester, xlsx_harvester, scheming_datasets, dcat,
+spatial_widget_ar, hierarchy_display, hierarchy_form,
+hierarchy_group_form, googleanalytics, envvars. Es decir: Andino
+(portal-andino de la Secretaria de Innovacion) sobre CKAN.
+
+**Como traer los datos.** Tres vias, en este orden de preferencia:
+
+1. `ckanext-harvest` con su `ckan_harvester` apuntando a
+   https://datos.gob.ar (API CKAN a CKAN). Es la via "real" y la que mas
+   extensiones ejercita: harvest usa jobs en background y, en su version
+   actual, Redis directo para la cola de fetch/gather (`redis` como
+   backend de `ckan.harvest.mq.type`). Es el primer caso concreto de
+   "extension que hardcodea Redis" y hay que portarla a `ckan.lib.jobs` /
+   `kvstore` o darle un `mq.type` PostgreSQL.
+2. `ckanext-dcat` cosechando `https://datos.gob.ar/catalog.xml` o el
+   `data.json` (DCAT-AP-AR). Tambien depende de harvest.
+3. Un cargador propio por API (`package_search` paginado del origen y
+   `package_create` local, con `ckanext-scheming` para respetar el
+   esquema de Andino). Es el plan B si harvest tarda: garantiza tener
+   datos para probar el resto mientras se porta harvest.
+
+**Orden de trabajo** (cada extension: instalar, correr su suite contra
+CKANito, anotar en `doc/ckanito/` que anda, que se parcheo y que no):
+
+1. Base de datos reales: `ckanext-scheming` (esquema de Andino;
+   `scheming_datasets`) y `ckanext-hierarchy`. Sin Solr en juego mas alla
+   de `fq` por `owner_org`/jerarquia.
+2. Cosecha: `ckanext-harvest` (+ `ckan_harvester`) y `ckanext-dcat`. El
+   grueso del trabajo de compatibilidad esta aca (Redis, jobs, y las
+   busquedas `fq` que hace harvest para reconciliar objetos).
+3. Datos tabulares: `ckanext-xloader` (pendiente de otra iteracion, ya
+   analizado: dos lineas de import) en vez de `datapusher` (servicio
+   externo, no encaja con "Python + DB").
+4. Vistas: `geo_view`, `geojson_view`, `wmts_view`, `shp_view`
+   (ckanext-geoview) y `resource_proxy`: front end, sin Solr.
+5. Espacial: `spatial_metadata`, `spatial_query`, `spatial_widget_ar`
+   (ckanext-spatial). Usa PostGIS para el modelo y Solr para `bbox` /
+   `spatial_geom`: hay que implementar la busqueda espacial en el backend
+   PostgreSQL (PostGIS en `package_search_index` o `before_dataset_search`
+   filtrando por ids). Es la extension mas "Solr".
+6. Tema y extras de Andino: `gobar_theme`, `series_explorer`,
+   `gobar_ckan_harvester`, `xlsx_harvester`, `googleanalytics`,
+   `envvars`. Se evaluan al final; `gobar_theme` esta atado a versiones
+   viejas de CKAN y puede no valer la pena.
+
+**Entregable**: instancia `datosgobar` en el servidor
+(`instances/datosgobar.env`, `datosgobar-ckanito.cluster311.com`),
+cosecha programada con el worker de CKANito, y una pagina en
+`doc/ckanito/extensions.rst` con la matriz extension / estado / cambios.
+
+**Riesgos propios**: volumen (1278 datasets con muchos recursos: medir el
+indice y las facets, que es justo lo pendiente de la fase 6); esquema de
+Andino con campos custom que van a `extras_*` y a facets; harvest y su
+manejo de Redis, que puede requerir un fork mantenido por nosotros.
+
 ## 4. Riesgos y como los manejo
 
 - **R1 Paridad de ranking.** Imposible replicar dismax exacto. Mitigacion:
