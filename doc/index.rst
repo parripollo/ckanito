@@ -19,7 +19,6 @@ each guide serves a different audience of CKAN users or contributors.
   extensions/index
   theming/index
   contributing/index
-  ckanito/index
   changelog
 
 .. seealso::

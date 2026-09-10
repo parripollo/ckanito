@@ -2,8 +2,9 @@
 
 CKANito is CKAN running on PostgreSQL only: no Solr, no Redis. Everything
 those services did sits behind an interface with a PostgreSQL
-implementation, so that anyone can plug another engine back in. See
-`PLAN-CKANITO.md` for the roadmap.
+implementation, so that anyone can plug another engine back in. The plan,
+the decisions and the explanation written for CKAN core developers live
+outside this repository, on https://ckanito.cluster311.com/plan.html.
 
 CKANito tracks `ckan/ckan` `master` and merges it regularly. To keep those
 merges cheap, new code lives in new files and upstream files are touched
@@ -39,9 +40,9 @@ modifies, so that merge conflicts can be resolved quickly.
   `kv_store` tables; migration
   `111_d2b4f6a8c0e1_create_background_job_session_kv_tables.py`.
 - `ckan/tests/lib/test_jobqueue.py`, `ckan/tests/lib/test_kvstore.py`.
-- `doc/ckanito/` - the technical explanation of the changes for CKAN
-  experts (architecture, search, jobs, sessions and key/value store,
-  upstream tracking and migration).
+- `doc/maintaining/search.rst` - how the search index works and is
+  managed (the official docs describe what exists; the history of the
+  change is on the project site).
 - `ckan/tests/lib/search/test_backends.py`,
   `ckan/tests/lib/search/postgres/test_lucene.py`.
 

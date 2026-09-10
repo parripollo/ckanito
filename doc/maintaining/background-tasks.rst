@@ -21,9 +21,10 @@ application is waiting is a good candidate for a background job.
 
 .. note::
 
-    The background job system is based on RQ_.
-
-    .. _RQ: http://python-rq.org
+    Jobs are stored in the ``background_job`` table of the CKAN database
+    and run by worker processes that poll it. No message broker or
+    external queue service is needed; several workers can share the same
+    queues safely (each job is claimed atomically).
 
 
 .. _background jobs writing:
@@ -106,16 +107,25 @@ ckan config ``.ini`` file under the ``ckan.jobs.timeout`` item.
 
 .. note::
 
-    For advanced queue management like scheduling jobs or managing existing
-    jobs access the RQ_ Queue_ and Job_ interfaces with
-    :py:func:`ckan.plugins.toolkit.get_job_queue` or
-    :py:func:`ckan.plugins.toolkit.job_from_id` functions.
-    Use :py:func:`ckan.lib.jobs.get_queue` or
-    :py:func:`ckan.lib.jobs.job_from_id` for code in core CKAN.
+    For advanced queue management (delayed jobs, deterministic job ids,
+    inspecting or cancelling existing jobs) use the queue and job
+    objects returned by :py:func:`ckan.plugins.toolkit.get_job_queue` and
+    :py:func:`ckan.plugins.toolkit.job_from_id` (or
+    :py:func:`ckan.lib.jobs.get_queue` / :py:func:`ckan.lib.jobs.job_from_id`
+    in core code)::
 
-    .. _Queue: https://python-rq.org/docs/
+        queue = toolkit.get_job_queue()
+        job = queue.enqueue_in(datetime.timedelta(minutes=5), my_function,
+                               arg1, job_id="my-unique-id")
+        toolkit.job_from_id("my-unique-id").delete()   # cancel it
 
-    .. _Job: https://python-rq.org/docs/jobs/
+    Enqueuing again with the same ``job_id`` replaces the pending job,
+    which is a simple way to debounce repeated work.
+
+    Inside a running job, :py:func:`ckan.lib.jobs.get_current_job`
+    returns the job being performed. When a job reaches its timeout a
+    :py:class:`ckan.lib.jobs.JobTimeoutException` is raised inside it so
+    that it can clean up; shortly afterwards the worker kills it.
 
 Accessing the database from background jobs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -154,8 +164,12 @@ Afterwards the worker waits again for the next job to be enqueued.
 
 .. note::
 
-    Executed jobs are discarded. In particular, no information about past jobs
-    is kept.
+    Jobs that finish successfully are discarded: no information about
+    them is kept. Jobs that fail (an exception, a timeout, or a worker
+    that died) stay in the ``background_job`` table with ``status =
+    failed``, the time they ended and the traceback, for inspection; they
+    are not retried automatically and do not show up in ``ckan jobs
+    list``.
 
 Workers can be started using the :ref:`cli jobs worker` command::
 
