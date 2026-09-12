@@ -532,11 +532,15 @@ def package_relationship_create(
         return _update_package_relationship(existing_rels[0],
                                             comment, context)
     rel = pkg1.add_relationship(rel_type, pkg2, comment=comment)
+    context['relationship'] = rel
+    # read before the commit closes the session
+    relationship_dicts = rel.as_dict(ref_package_by=ref_package_by)
     if not context.get('defer_commit'):
         model.repo.commit_and_remove()
-    context['relationship'] = rel
-
-    relationship_dicts = rel.as_dict(ref_package_by=ref_package_by)
+        # the index (and the package_show cache it holds) lists the
+        # relationships of both datasets
+        logic.index_update_package(context, pkg1.id)
+        logic.index_update_package(context, pkg2.id)
     return relationship_dicts
 
 

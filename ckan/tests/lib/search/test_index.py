@@ -356,3 +356,49 @@ def test_index_only_called_once():
         assert m.call_count == 1
 
         assert helpers.call_action("package_show", id=dataset["id"])["notes"] == "hi"
+
+
+@pytest.mark.usefixtures("clean_db", "clean_index")
+def test_update_of_a_dataset_with_relationships_is_indexed():
+    parent = factories.Dataset()
+    child = factories.Dataset()
+    helpers.call_action("package_relationship_create", subject=child["id"],
+                        object=parent["id"], type="child_of")
+
+    helpers.call_action("package_patch", id=child["id"], notes="updated")
+    helpers.call_action("package_patch", id=parent["id"], notes="updated")
+
+    result = helpers.call_action("package_search",
+                                 fq="child_of:%s" % parent["name"])
+    assert [d["name"] for d in result["results"]] == [child["name"]]
+    result = helpers.call_action("package_search",
+                                 fq="parent_of:%s" % child["name"])
+    assert [d["name"] for d in result["results"]] == [parent["name"]]
+
+
+@pytest.mark.usefixtures("clean_db", "clean_index")
+def test_relationship_changes_reach_the_index_and_the_show_cache():
+    parent = factories.Dataset()
+    child = factories.Dataset()
+    rel = dict(subject=child["id"], object=parent["id"], type="child_of")
+    helpers.call_action("package_relationship_create", **rel)
+
+    shown = helpers.call_action("package_show", id=child["id"])
+    assert len(shown["relationships_as_subject"]) == 1
+    result = helpers.call_action("package_search",
+                                 fq="child_of:%s" % parent["name"])
+    assert [d["name"] for d in result["results"]] == [child["name"]]
+
+    helpers.call_action("package_relationship_delete", **rel)
+    assert helpers.call_action(
+        "package_show", id=child["id"])["relationships_as_subject"] == []
+    result = helpers.call_action("package_search",
+                                 fq="child_of:%s" % parent["name"])
+    assert result["count"] == 0
+
+    # creating it again brings the deleted one back
+    helpers.call_action("package_relationship_create", **rel)
+    assert len(helpers.call_action(
+        "package_show", id=child["id"])["relationships_as_subject"]) == 1
+    assert len(helpers.call_action(
+        "package_relationships_list", id=child["id"])) == 1

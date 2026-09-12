@@ -280,6 +280,8 @@ def package_relationship_delete(context: Context, data_dict: DataDict) -> Action
 
     relationship.delete()
     model.repo.commit()
+    ckan.logic.index_update_package(context, pkg1.id)
+    ckan.logic.index_update_package(context, pkg2.id)
 
 def member_delete(context: Context, data_dict: DataDict) -> ActionResult.MemberDelete:
     '''Remove an object (e.g. a user, dataset or group) from a group.
