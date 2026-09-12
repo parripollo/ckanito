@@ -1,0 +1,1 @@
+A plugin that subclasses another loaded singleton plugin no longer shares its instance (SingletonPlugin looked the instance up with hasattr, which found the parent's).
