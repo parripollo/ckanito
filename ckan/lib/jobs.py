@@ -159,6 +159,10 @@ class Queue:
         u'''The queued jobs, in execution order.'''
         return self.backend.list_jobs(self.name)
 
+    def get_jobs(self) -> list[Job]:
+        u'''The queued jobs, in execution order (same as ``jobs``).'''
+        return self.jobs
+
     @property
     def job_ids(self) -> list[str]:
         return [job.id for job in self.jobs]

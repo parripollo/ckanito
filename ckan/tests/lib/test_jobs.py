@@ -57,6 +57,13 @@ class TestEnqueue(RQTestBase):
         assert len(all_jobs[0].kwargs) == 0
         assert all_jobs[1].kwargs == {u"foo": 1}
 
+    def test_job_description_and_str(self):
+        job = self.enqueue(args=[1, {u"resource_id": u"abc"}],
+                           kwargs={u"foo": 2})
+        assert job.description == (
+            u"%s(1, {'resource_id': 'abc'}, foo=2)" % job.func_name)
+        assert str(job) == u"<Job %s: %s>" % (job.id, job.description)
+
     def test_enqueue_title(self):
         self.enqueue()
         self.enqueue(title=u"Title")
@@ -114,6 +121,16 @@ class TestGetQueue(RQTestBase):
         """
         q = jobs.get_queue()
         assert jobs.remove_queue_name_prefix(q.name) == jobs.DEFAULT_QUEUE_NAME
+
+    def test_get_queue_get_jobs(self):
+        u"""
+        Test that ``get_jobs`` lists the queued jobs like ``jobs`` does.
+        """
+        self.enqueue(args=[1])
+        self.enqueue(args=[2], queue=u"other")
+        q = jobs.get_queue()
+        assert [j.args for j in q.get_jobs()] == [[1]]
+        assert q.get_jobs() == q.jobs
 
     def test_get_queue_other_queue(self):
         u"""

@@ -78,6 +78,21 @@ class Job:
     def func(self) -> Callable[..., Any]:
         return resolve_callable(self.func_name)
 
+    @property
+    def description(self) -> str:
+        """The call this job makes, as ``func(arg, key=value)``.
+
+        Extensions used to read this from ``rq.job.Job`` to tell jobs
+        apart by their arguments.
+        """
+        parts = [repr(arg) for arg in self.args]
+        parts += ["%s=%r" % (key, value)
+                  for key, value in self.kwargs.items()]
+        return "%s(%s)" % (self.func_name, ", ".join(parts))
+
+    def __str__(self) -> str:
+        return "<Job %s: %s>" % (self.id, self.description)
+
     def perform(self) -> Any:
         """Run the job function in the current process."""
         return self.func(*self.args, **self.kwargs)
