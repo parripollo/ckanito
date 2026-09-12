@@ -30,7 +30,6 @@ the proposal modifies, so that merge conflicts can be resolved quickly.
 - `ckan/migration/versions/110_c1a3e5f7b9d2_create_package_search_index_table.py`
   - creates the table and the `ckan_english` text search configuration
   (English stemming, no stop words, like the Solr schema).
-- `ckan/cli/ckanito.py` - `ckan ckanito seed-demo`.
 - `ckan/lib/jobqueue/__init__.py`, `base.py`, `postgres.py` - background
   jobs contract (`JobBackend`, `Job`), registry (`ckan.jobs.backend`) and
   the PostgreSQL backend on the `background_job` table (claims with
