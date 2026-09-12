@@ -294,7 +294,10 @@ def _read(id: Optional[str], limit: int, group_type: str) -> dict[str, Any]:
         if facet in default_facet_titles:
             facets[facet] = default_facet_titles[facet]
         else:
-            facets[facet] = facet
+            # a title for a custom facet can come from the config:
+            # search.facets.<facet>.title = Some title
+            facets[facet] = config.get(
+                u'search.facets.%s.title' % facet) or facet
 
     # Facet titles
     facets = _update_facet_titles(facets, group_type)
