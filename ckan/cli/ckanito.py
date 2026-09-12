@@ -47,21 +47,25 @@ ORGANIZATIONS = [
      "description": "Datos ambientales: calidad de aire, agua, residuos y "
                     "areas protegidas.",
      "image_url": "https://placehold.co/200x200/2e7d32/ffffff?text=Ambiente",
-     "extras": [{"key": "sector", "value": "ambiente"}],
+     "fields": {"sector": "environment",
+                "website": "https://ambiente.gob.ar"},
      "users": [("editor-ambiente", "editor"), ("analista", "member")]},
     {"name": "municipalidad-de-cordoba", "title": "Municipalidad de Cordoba",
      "description": "Datos de la ciudad de Cordoba: transporte, obras, "
                     "presupuesto participativo y espacios verdes.",
      "image_url": "https://placehold.co/200x200/1565c0/ffffff?text=Cordoba",
+     "fields": {"sector": "city", "website": "https://cordoba.gob.ar"},
      "users": [("editor-ciudad", "editor"), ("analista", "member")]},
     {"name": "instituto-de-estadistica", "title": "Instituto de Estadistica",
      "description": "Series estadisticas oficiales: poblacion, precios, "
                     "empleo y comercio exterior.",
      "image_url": "https://placehold.co/200x200/6a1b9a/ffffff?text=INDEC",
+     "fields": {"sector": "statistics", "website": "https://indec.gob.ar"},
      "users": [("analista", "admin")]},
     {"name": "universidad-nacional", "title": "Universidad Nacional",
      "description": "Datos academicos y de investigacion.",
      "image_url": "https://placehold.co/200x200/ef6c00/ffffff?text=UN",
+     "fields": {"sector": "academic", "website": "https://unc.edu.ar"},
      "users": [("editor-ciudad", "member")]},
 ]
 
@@ -84,6 +88,18 @@ VOCABULARY = {
 
 LICENSES = ["cc-by", "cc-by-sa", "odc-odbl", "cc-zero", "other-open",
             "notspecified"]
+
+# Fields of the demo scheming schemas (ckanito_demo_schema.yaml and
+# ckanito_demo_organization.yaml). With ckanext-scheming enabled they are
+# real dataset fields; without it they are stored as extras.
+FREQUENCY = {"diaria": "daily", "semanal": "weekly", "mensual": "monthly",
+             "anual": "yearly", "eventual": "irregular"}
+CONTACT_AMBIENTE = {"contact_name": "Elena Editora",
+                    "contact_email": "elena@ckanito.local"}
+CONTACT_CIUDAD = {"contact_name": "Carlos Cardozo",
+                  "contact_email": "carlos@ckanito.local"}
+CONTACT_INDEC = {"contact_name": "Mesa de ayuda INDEC",
+                 "contact_email": "datos@indec.gob.ar"}
 
 
 # --- generated sample files ---------------------------------------------------
@@ -388,8 +404,9 @@ DATASETS: list[dict[str, Any]] = [
         "maintainer_email": "elena@ckanito.local",
         "version": "2026.1",
         "url": "https://ambiente.gob.ar/aire",
-        "extras": [{"key": "cobertura_geografica", "value": "Ciudad"},
-                   {"key": "periodo", "value": "2026"}],
+        "fields": {"theme": ["environment", "health"],
+                   "temporal_start": "2026-01-01", "temporal_end": "2026-01-31",
+                   "geographic_coverage": "city", **CONTACT_AMBIENTE},
         "resources": [
             {"name": "Mediciones enero 2026 (CSV)", "format": "CSV",
              "upload": ("calidad-aire-2026-01.csv", CSV_AIRE),
@@ -420,6 +437,10 @@ DATASETS: list[dict[str, Any]] = [
         "tags": ["biodiversidad", "parques", "conservacion"],
         "license_id": "odc-odbl",
         "frequency": "anual",
+        "fields": {"theme": ["environment"], "temporal_start": "2025-01-01",
+                   "temporal_end": "2025-12-31", "geographic_coverage": "province",
+                   "contact_name": "Direccion de Areas Protegidas",
+                   "contact_email": "areas@ambiente.gob.ar"},
         "notes": "Listado y ubicacion de las areas naturales protegidas de "
                  "la provincia, con categoria, superficie y anio de creacion.",
         "resources": [
@@ -445,6 +466,9 @@ DATASETS: list[dict[str, Any]] = [
         "tags": ["residuos", "reciclaje"],
         "license_id": "cc-zero",
         "frequency": "mensual",
+        "fields": {"theme": ["environment", "economy"],
+                   "temporal_start": "2025-01-01", "temporal_end": "2025-12-31",
+                   "geographic_coverage": "city", **CONTACT_AMBIENTE},
         "notes": "Toneladas de residuos recolectadas por mes y tipo durante "
                  "2025. Dataset privado: solo lo ven los miembros de la "
                  "organizacion.",
@@ -465,7 +489,9 @@ DATASETS: list[dict[str, Any]] = [
         "frequency": "mensual",
         "notes": "Pasajeros transportados, kilometros recorridos y unidades "
                  "en servicio por linea y ramal, primer trimestre de 2026.",
-        "extras": [{"key": "cobertura_geografica", "value": "Cordoba"}],
+        "fields": {"theme": ["transport"],
+                   "temporal_start": "2026-01-01", "temporal_end": "2026-03-31",
+                   "geographic_coverage": "city", **CONTACT_CIUDAD},
         "resources": [
             {"name": "Pasajeros por linea y mes (CSV)", "format": "CSV",
              "upload": ("colectivos-2026.csv", CSV_COLECTIVOS),
@@ -487,6 +513,9 @@ DATASETS: list[dict[str, Any]] = [
         "tags": ["bicicletas", "movilidad"],
         "license_id": "cc-by-sa",
         "frequency": "diaria",
+        "fields": {"theme": ["transport", "health"],
+                   "temporal_start": "2026-01-01", "temporal_end": "2026-01-31",
+                   "geographic_coverage": "city", **CONTACT_CIUDAD},
         "notes": "Viajes diarios del sistema de bicicletas publicas en enero "
                  "de 2026 y ubicacion de las estaciones.",
         "resources": [
@@ -506,6 +535,9 @@ DATASETS: list[dict[str, Any]] = [
         "tags": ["presupuesto", "participacion"],
         "license_id": "other-open",
         "frequency": "anual",
+        "fields": {"theme": ["economy", "government"],
+                   "temporal_start": "2025-01-01", "temporal_end": "2025-12-31",
+                   "geographic_coverage": "city", **CONTACT_CIUDAD},
         "notes": "Proyectos presentados y votados por barrio en la edicion "
                  "2025, con monto asignado y estado de ejecucion.",
         "resources": [
@@ -526,6 +558,9 @@ DATASETS: list[dict[str, Any]] = [
         "tags": ["precios", "inflacion", "ipc"],
         "license_id": "cc-by",
         "frequency": "mensual",
+        "fields": {"theme": ["economy"], "temporal_start": "2025-01-01",
+                   "temporal_end": "2025-12-31", "geographic_coverage": "country",
+                   **CONTACT_INDEC},
         "notes": "Variacion mensual del IPC, nivel general y por division, "
                  "enero de 2024 a diciembre de 2025.",
         "resources": [
@@ -545,6 +580,9 @@ DATASETS: list[dict[str, Any]] = [
         "tags": ["censo", "poblacion", "demografia"],
         "license_id": "cc-by",
         "frequency": "eventual",
+        "fields": {"theme": ["government"], "temporal_start": "2022-01-01",
+                   "temporal_end": "2022-12-31", "geographic_coverage": "province",
+                   **CONTACT_INDEC},
         "notes": "Poblacion por departamento en los censos 2010 y 2022, "
                  "variacion, superficie y densidad.",
         "resources": [
@@ -570,6 +608,8 @@ DATASETS: list[dict[str, Any]] = [
         "tags": ["vacunas", "salud"],
         "license_id": "cc-zero",
         "frequency": "semanal",
+        "fields": {"theme": ["health"], "temporal_start": "2025-01-01",
+                   "temporal_end": "2025-12-31", "geographic_coverage": "province"},
         "notes": "Dosis aplicadas por semana, vacuna y grupo etario, primer "
                  "semestre de 2026.",
         "resources": [
@@ -586,6 +626,9 @@ DATASETS: list[dict[str, Any]] = [
         "tags": ["investigacion", "ciencia"],
         "license_id": "notspecified",
         "frequency": "anual",
+        "fields": {"theme": ["education"], "temporal_start": "2025-01-01",
+                   "temporal_end": "2025-12-31", "geographic_coverage": "country",
+                   "language": "en"},
         "notes": "Articulos publicados por facultad y anio, con referato y "
                  "citas recibidas.",
         "resources": [
@@ -602,6 +645,7 @@ DATASETS: list[dict[str, Any]] = [
         "tags": ["prueba"],
         "license_id": "cc-by",
         "frequency": "eventual",
+        "fields": {"theme": ["government"], "geographic_coverage": "country"},
         "notes": "Dataset creado por un usuario sin organizacion.",
         "resources": [],
     },
@@ -613,6 +657,9 @@ DATASETS: list[dict[str, Any]] = [
         "tags": ["transito"],
         "license_id": "cc-by",
         "frequency": "mensual",
+        "fields": {"theme": ["transport", "health"],
+                   "temporal_start": "2025-01-01", "temporal_end": "2025-12-31",
+                   "geographic_coverage": "city", **CONTACT_CIUDAD},
         "notes": "Todavia en preparacion: solo lo ven los editores.",
         "state": "draft",
         "resources": [
@@ -629,6 +676,7 @@ DATASETS: list[dict[str, Any]] = [
         "tags": ["prueba"],
         "license_id": "cc-by",
         "frequency": "eventual",
+        "fields": {"theme": ["government"]},
         "notes": "Este dataset fue eliminado y solo lo ve un sysadmin.",
         "delete": True,
         "resources": [],
@@ -690,13 +738,52 @@ class Seeder:
             admin.sysadmin = True
             model.Session.commit()
 
+    @staticmethod
+    def custom_fields(data: dict[str, Any], plugin: str) -> dict[str, Any]:
+        """Place the scheming ``fields`` of ``data``: as real fields when
+        the scheming plugin is loaded, as extras otherwise."""
+        fields = data.pop("fields", {})
+        if plugins.plugin_loaded(plugin):
+            data.update(fields)
+        elif fields:
+            data["extras"] = data.get("extras", []) + [
+                {"key": key, "value": value if isinstance(value, str)
+                 else ", ".join(value)} for key, value in fields.items()]
+        return fields
+
+    def patch_fields(self, action: str, existing: dict[str, Any],
+                     fields: dict[str, Any], plugin: str) -> None:
+        """Bring the scheming fields of an existing object up to date."""
+        if not plugins.plugin_loaded(plugin) or not fields:
+            return
+        if all(existing.get(key) == value for key, value in fields.items()) \
+                and not (action == "package_patch" and existing.get("extras")):
+            return
+        if action == "package_patch":
+            # package_update cannot be handed back the relationships that
+            # package_show returns (it deletes or breaks them), so the
+            # dataset is updated without them; free extras of older demo
+            # versions are dropped, the schema fields replace them.
+            data = dict(existing, extras=[], **fields)
+            data.pop("relationships_as_subject", None)
+            data.pop("relationships_as_object", None)
+            self.action("package_update", **data)
+        else:
+            self.action(action, id=existing["id"], **fields)
+        self.count("updated")
+
     def organizations(self) -> None:
         for data in ORGANIZATIONS:
             data = dict(data)
             members = data.pop("users")
-            if not self.exists("organization_show", data["name"]):
+            fields = self.custom_fields(data, "scheming_organizations")
+            existing = self.exists("organization_show", data["name"])
+            if existing is None:
                 self.action("organization_create", **data)
                 self.count("organizations")
+            else:
+                self.patch_fields("organization_patch", existing, fields,
+                                  "scheming_organizations")
             for username, role in members:
                 self.action("organization_member_create", id=data["name"],
                             username=username, role=role)
@@ -728,6 +815,10 @@ class Seeder:
             resources = data.pop("resources")
             frequency = data.pop("frequency")
             delete = data.pop("delete", False)
+            data.setdefault("fields", {})
+            data["fields"]["update_frequency"] = FREQUENCY[frequency]
+            data["fields"].setdefault("language", "es")
+            fields = self.custom_fields(data, "scheming_datasets")
             dataset = self.exists("package_show", data["name"])
             if dataset is None:
                 tags = [{"name": tag} for tag in data.pop("tags")]
@@ -742,6 +833,9 @@ class Seeder:
                 self.count("datasets")
             elif dataset.get("state") == "deleted":
                 continue
+            else:
+                self.patch_fields("package_patch", dataset, fields,
+                                  "scheming_datasets")
             # Resources are reconciled one by one: a run interrupted half
             # way completes on the next one, and a changed definition
             # (e.g. a link that became an upload) updates the instance.
@@ -767,6 +861,8 @@ class Seeder:
             filename, content = upload
             data["upload"] = FileStorage(io.BytesIO(content), filename)
             data["url"] = filename
+        if data.get("format") in ("CSV", "JSON", "GeoJSON", "TXT", "HTML"):
+            data.setdefault("encoding", "UTF-8")
 
         changed = False
         if existing is None:
@@ -804,7 +900,9 @@ class Seeder:
             return existing.get("url_type") != "upload" or \
                 not (existing.get("url") or "").endswith("/" + data["url"])
         return existing.get("url") != data.get("url") or \
-            existing.get("format") != data.get("format")
+            existing.get("format") != data.get("format") or \
+            bool(data.get("encoding") and
+                 existing.get("encoding") != data.get("encoding"))
 
     def datastore(self, resource_id: str, csv_bytes: bytes,
                   replace: bool = False) -> None:
@@ -836,13 +934,12 @@ class Seeder:
             # detached instances from a CLI process
             subject_pkg = model.Package.get(subject)
             object_pkg = model.Package.get(obj)
-            if subject_pkg and object_pkg and model.Session.query(
-                    model.PackageRelationship).filter_by(
-                        subject_package_id=subject_pkg.id,
-                        object_package_id=object_pkg.id,
-                        type=rel_type).filter(
-                        model.PackageRelationship.state != "deleted"
-                    ).count():
+            if not subject_pkg or not object_pkg:
+                continue
+            rel = model.Session.query(model.PackageRelationship).filter_by(
+                subject_package_id=subject_pkg.id,
+                object_package_id=object_pkg.id, type=rel_type).first()
+            if rel is not None and rel.state != "deleted":
                 continue
             self.action("package_relationship_create", subject=subject,
                         object=obj, type=rel_type, comment=comment)

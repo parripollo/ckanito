@@ -1,0 +1,48 @@
+# Organization schema of the demo instance (ckanext-scheming).
+#
+#   scheming.organization_schemas = ckan.cli:ckanito_demo_organization.yaml
+
+scheming_version: 2
+organization_type: organization
+about: Demo organization schema
+
+fields:
+
+- field_name: title
+  label: Name
+  validators: ignore_missing unicode_safe
+  form_snippet: large_text.html
+  form_attrs:
+    data-module: slug-preview-target
+
+- field_name: name
+  label: URL
+  validators: not_empty unicode_safe name_validator group_name_validator
+  form_snippet: slug.html
+
+- field_name: description
+  label: Description
+  form_snippet: markdown.html
+
+- field_name: image_url
+  label: Image URL
+  preset: organization_url_upload
+
+- field_name: sector
+  label: Sector
+  preset: select
+  display_snippet: select.html
+  choices:
+  - value: environment
+    label: Environment
+  - value: city
+    label: City government
+  - value: statistics
+    label: Statistics
+  - value: academic
+    label: Academic
+
+- field_name: website
+  label: Website
+  display_snippet: link.html
+  validators: ignore_missing unicode_safe url_validator
