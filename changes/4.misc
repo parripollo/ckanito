@@ -1,0 +1,1 @@
+The demo data command (ckan ckanito seed-demo) leaves the core: it belongs to the demo repository, together with the extensions it exercises.
