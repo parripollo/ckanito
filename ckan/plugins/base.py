@@ -172,7 +172,10 @@ class SingletonPlugin(Plugin):
     """
 
     def __new__(cls, *args: Any, **kwargs: Any):
-        if not hasattr(cls, "_instance"):
+        # one instance per class: `hasattr` would find the instance of a
+        # parent class, so a plugin that subclasses another loaded plugin
+        # would share its instance
+        if "_instance" not in cls.__dict__:
             cls._instance = super().__new__(cls)
 
         return cls._instance

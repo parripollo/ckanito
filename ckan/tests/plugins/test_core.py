@@ -98,6 +98,23 @@ def test_implemented_by_through_extending():
     assert not IBaz.implemented_by(Ext)
 
 
+def test_singleton_subclass_has_its_own_instance():
+    """A plugin that subclasses another singleton plugin must not share
+    the instance of its parent (e.g. a harvester built on CKANHarvester
+    with both plugins enabled)."""
+    class Parent(plugins.SingletonPlugin):
+        pass
+
+    class Child(Parent):
+        pass
+
+    parent, child = Parent(), Child()
+    assert parent is Parent()
+    assert child is Child()
+    assert parent is not child
+    assert type(child) is Child
+
+
 def test_provided_by():
     assert IFoo.provided_by(FooImpl())
     assert IFoo.provided_by(FooBarImpl())
