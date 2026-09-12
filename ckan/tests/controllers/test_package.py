@@ -1583,6 +1583,18 @@ class TestSearch(object):
         assert "Dataset Two" in ds_titles
         assert "Dataset Three" in ds_titles
 
+    @pytest.mark.ckan_config("search.facets", "organization update_frequency")
+    @pytest.mark.ckan_config("search.facets.update_frequency.title",
+                             "Update frequency")
+    def test_search_page_custom_facet_title_from_config(self, app):
+        factories.Dataset(extras=[{"key": "update_frequency",
+                                   "value": "daily"}])
+
+        search_results = app.get(url_for("dataset.search"))
+
+        assert "Update frequency" in search_results
+        assert "daily" in search_results
+
     def test_search_page_results(self, app):
         """Searching for datasets returns expected results."""
 
