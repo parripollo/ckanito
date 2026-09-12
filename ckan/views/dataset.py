@@ -295,7 +295,10 @@ def search(package_type: str) -> str:
         if facet in default_facet_titles:
             facets[facet] = default_facet_titles[facet]
         else:
-            facets[facet] = facet
+            # a title for a custom facet can come from the config:
+            # search.facets.<facet>.title = Some title
+            facets[facet] = config.get(
+                u'search.facets.%s.title' % facet) or facet
 
     # Facet titles
     for plugin in plugins.PluginImplementations(plugins.IFacets):
