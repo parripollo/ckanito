@@ -184,16 +184,22 @@ class PackageSearchIndex(SearchIndex):
         rel_dict: dict[str, list[Any]] = collections.defaultdict(list)
         subjects = pkg_dict.pop("relationships_as_subject", [])
         objects = pkg_dict.pop("relationships_as_object", [])
+
+        def related_package(rel: dict[str, Any], key: str) -> model.Package:
+            # the show schema knows no package id keys, so a validated
+            # dict carries them under __extras
+            pkg = model.Package.get(
+                rel.get(key) or rel.get('__extras', {}).get(key))
+            assert pkg
+            return pkg
+
         for rel in objects:
             type = model.PackageRelationship.forward_to_reverse_type(rel['type'])
-            pkg = model.Package.get(rel['subject_package_id'])
-            assert pkg
-            rel_dict[type].append(pkg.name)
+            rel_dict[type].append(
+                related_package(rel, 'subject_package_id').name)
         for rel in subjects:
-            type = rel['type']
-            pkg = model.Package.get(rel['object_package_id'])
-            assert pkg
-            rel_dict[type].append(pkg.name)
+            rel_dict[rel['type']].append(
+                related_package(rel, 'object_package_id').name)
         for key, value in rel_dict.items():
             if key not in pkg_dict:
                 pkg_dict[key] = value

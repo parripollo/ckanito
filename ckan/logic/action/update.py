@@ -691,12 +691,20 @@ def _update_package_relationship(
     api = context.get('api_version')
     ref_package_by = 'id' if api == 2 else 'name'
     is_changed = relationship.comment != comment
+    if relationship.state == 'deleted':
+        # creating a relationship that was deleted brings it back
+        relationship.state = 'active'
+        is_changed = True
     if is_changed:
         relationship.comment = comment
-        if not context.get('defer_commit'):
-            model.repo.commit_and_remove()
+    subject_id, object_id = relationship.subject.id, relationship.object.id
+    # read before the commit closes the session
     rel_dict = relationship.as_dict(package=relationship.subject,
                                     ref_package_by=ref_package_by)
+    if is_changed and not context.get('defer_commit'):
+        model.repo.commit_and_remove()
+        logic.index_update_package(context, subject_id)
+        logic.index_update_package(context, object_id)
     return rel_dict
 
 
