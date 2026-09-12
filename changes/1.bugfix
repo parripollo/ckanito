@@ -1,0 +1,1 @@
+Dataset relationships are kept in the search index and in the cached dict package_show serves: updating a dataset no longer deletes its relationships, and creating a deleted relationship again brings it back.
