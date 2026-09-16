@@ -1,6 +1,31 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
+
+# Enough [project] for `uv sync` / `uv run ckan ...` to work. The metadata,
+# packages and entry points still live in setup.cfg (listed as dynamic
+# here so setuptools keeps reading them from there); the dependencies are
+# requirements.in and dev-requirements.txt, the same files pip-compile
+# uses for requirements.txt.
+[project]
+name = "ckan"
+requires-python = ">=3.10"
+dynamic = [
+    "version", "description", "readme", "license", "authors", "keywords",
+    "classifiers", "urls", "scripts", "entry-points",
+    "dependencies", "optional-dependencies",
+]
+
+[tool.setuptools.dynamic]
+version = { attr = "ckan.__version__" }
+dependencies = { file = ["requirements.in"] }
+optional-dependencies.dev = { file = ["dev-requirements.txt"] }
+
+# `uv sync` installs the `dev` group by default; pointing it at the extra
+# above keeps dev-requirements.txt as the only list (pip: `pip install
+# -e .[dev]`, CI keeps `pip install -r dev-requirements.txt`).
+[dependency-groups]
+dev = ["ckan[dev]"]
 
 
 [tool.towncrier]

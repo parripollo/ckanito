@@ -1,0 +1,1 @@
+New `ckan dev` (writes ckan.ini, migrates, creates the first sysadmin, runs the server) and `ckan dev sql` (idempotent roles/databases/grants SQL to pipe into psql). `uv sync` now works: `[project]` in pyproject.toml with the dependencies read from requirements.in and the dev group from dev-requirements.txt; psycopg2-binary replaces psycopg2.

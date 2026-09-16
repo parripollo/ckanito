@@ -33,7 +33,22 @@ tools and more. Read more at `ckan.org <https://ckan.org/>`_.
 Installation
 ------------
 
-See the `CKAN Documentation <https://docs.ckan.org>`_ for installation instructions.
+To run it locally you need PostgreSQL (``apt install postgresql``) and
+`uv <https://docs.astral.sh/uv/>`_::
+
+    git clone https://github.com/parripollo/ckanito.git && cd ckanito
+    uv sync
+    uv run ckan dev sql | sudo -u postgres psql   # once: roles and databases
+    uv run ckan dev                               # http://localhost:5000
+
+``ckan dev`` writes ``ckan.ini``, runs the migrations, creates the first
+sysadmin and starts the server. The sysadmin is ``admin`` and its password
+is printed once; later, ``uv run ckan user setpass admin`` sets a new one
+and ``uv run ckan user token add admin dev`` gives you an API token. Run
+``ckan dev`` again after every ``git pull``.
+
+See the `CKAN Documentation <https://docs.ckan.org>`_ for the full
+installation instructions.
 
 
 Support

@@ -40,6 +40,9 @@ the proposal modifies, so that merge conflicts can be resolved quickly.
   `kv_store` tables; migration
   `111_d2b4f6a8c0e1_create_background_job_session_kv_tables.py`.
 - `ckan/tests/lib/test_jobqueue.py`, `ckan/tests/lib/test_kvstore.py`.
+- `ckan/cli/dev.py` - `ckan dev` (write ckan.ini, migrate, first sysadmin,
+  run) and `ckan dev sql` (idempotent roles/databases/grants SQL to pipe
+  into psql).
 - `doc/maintaining/search.rst` - how the search index works and is
   managed (the official docs describe what exists; the history of the
   change is on the project site).
@@ -97,6 +100,8 @@ against CKAN may need these one-line changes:
 | `ckan/config/config_declaration.yaml` | `ckan.search.backend` (default `postgres`) and `ckan.search.postgres.text_config` added before `solr_url`. | Backend selection. |
 | `ckan/model/__init__.py` | imports `package_search_index_table` so `create_all` / `drop_all` handle it. | Index table lives in the CKAN database. |
 | `setup.cfg` | `ckanito` entry in `ckan.click_command`. | Registers `ckan ckanito`. |
+| `ckan/cli/cli.py` | imports and registers `dev`; `dev` listed in `_no_config_commands`. | `ckan dev` must run before `ckan.ini` exists. |
+| `pyproject.toml`, `requirements.in`, `requirements.txt` | `[project]` table (dynamic metadata, dependencies from `requirements.in`, `dev` extra from `dev-requirements.txt`); `psycopg2` replaced by `psycopg2-binary`. New `.python-version` and `uv.lock`. | `uv sync` / `uv run ckan` work; no libpq-dev or compiler needed. `setup.cfg` is untouched. |
 | `ckan/lib/jobs.py` | rewritten on top of `ckan.lib.jobqueue`: same public functions, plus own `Queue`/`Job` objects exposing what core, datastore and tests used from RQ (`enqueue_call`, `enqueue_in`, `fetch_job`, `scheduled_job_registry`, `job.meta`, `job.delete()`...); `Worker` polls the backend and forks a child per job, enforcing the timeout with a kill. | No Redis / RQ. `ckanext/datastore` needs no change. |
 | `ckan/config/middleware/common_middleware.py`, `flask_app.py` | `CKANRedisSessionInterface` replaced by `CKANPostgresSessionInterface` (`SESSION_TYPE = postgres`, table `session_store`). | Server side sessions without Redis. |
 | `ckan/plugins/interfaces.py` | `IJobBackend` appended. | Lets extensions register job backends. |

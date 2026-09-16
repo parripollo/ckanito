@@ -91,7 +91,7 @@ pluggy==1.6.0
     # via file-keeper
 polib==1.2.0
     # via -r requirements.in
-psycopg2==2.9.12
+psycopg2-binary==2.9.12
     # via -r requirements.in
 pyjwt==2.13.0
     # via -r requirements.in

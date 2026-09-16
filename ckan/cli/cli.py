@@ -19,6 +19,7 @@ from . import (
     clean,
     dataset,
     db, search_index, server,
+    dev,
     generate,
     jobs,
     notify,
@@ -43,6 +44,7 @@ log = logging.getLogger(__name__)
 
 _no_config_commands = [
     [u'config-tool'],
+    [u'dev'],
     [u'generate', u'config'],
     [u'generate', u'extension'],
 ]
@@ -221,6 +223,7 @@ ckan.add_command(config.config)
 ckan.add_command(config_tool.config_tool)
 ckan.add_command(dataset.dataset)
 ckan.add_command(db.db)
+ckan.add_command(dev.dev)
 ckan.add_command(generate.generate)
 ckan.add_command(jobs.jobs)
 ckan.add_command(notify.notify)
