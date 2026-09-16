@@ -1,0 +1,1 @@
+A malformed POST to /_tracking (trailing '&', a part without '=', an unencoded '=' in a value, missing User-Agent) no longer returns a 500; unreadable parts are skipped.

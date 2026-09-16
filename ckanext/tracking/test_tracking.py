@@ -70,6 +70,48 @@ def update_tracking_summary():
     update_all(start_date=date)
 
 
+@pytest.mark.ckan_config("ckan.plugins", "tracking")
+@pytest.mark.usefixtures("with_plugins", "clean_db", "app")
+class TestTrackingPayload(object):
+    """Malformed beacons must not turn into 500s."""
+
+    def _post(self, app, body, **environ):
+        return app.post(
+            "/_tracking",
+            data=body,
+            content_type="application/x-www-form-urlencoded",
+            environ_overrides=environ,
+        )
+
+    @pytest.mark.parametrize("body", [
+        "",                                   # empty body
+        "url=/dataset/x&type=page&",          # trailing '&'
+        "url=/dataset/?q=a=b&type=page",      # unencoded '=' in a value
+        "garbage",                            # no '=' at all
+        "type",                               # key without value
+    ])
+    def test_malformed_body_is_not_a_500(self, app, body):
+        resp = self._post(
+            app, body, HTTP_USER_AGENT="x", REMOTE_ADDR="127.0.0.1")
+        assert resp.status_code == 200
+
+    def test_missing_headers_are_not_a_500(self, app):
+        resp = app.post(
+            "/_tracking",
+            data="url=/dataset/x&type=page",
+            content_type="application/x-www-form-urlencoded",
+        )
+        assert resp.status_code == 200
+
+    def test_values_are_unquoted(self, app, track):
+        from ckan import model
+        from ckanext.tracking.model import TrackingRaw
+        track("/dataset/x y")
+        raw = model.Session.query(TrackingRaw).one()
+        assert raw.url == "/dataset/x y"
+        assert raw.tracking_type == "page"
+
+
 @pytest.mark.ckan_config("ckan.root_path", "/foo/{{LANG}}")
 @pytest.mark.ckan_config("ckan.plugins", "tracking")
 @pytest.mark.usefixtures("with_plugins", "clean_db", "app")
