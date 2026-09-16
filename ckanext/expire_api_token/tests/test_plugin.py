@@ -17,7 +17,7 @@ from ckan.lib.helpers import url_for
 class TestExpireApiTokenPlugin(object):
     def test_token_is_removed_on_second_use(self, app):
         user = factories.User()
-        now = datetime.now()
+        now = datetime.utcnow()  # the plugin compares against utcnow
         with freeze_time(now):
             data = helpers.call_action(
                 u"api_token_create",

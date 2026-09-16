@@ -47,6 +47,13 @@ is printed once; later, ``uv run ckan user setpass admin`` sets a new one
 and ``uv run ckan user token add admin dev`` gives you an API token. Run
 ``ckan dev`` again after every ``git pull``.
 
+The tests use two more databases, ``ckan_test`` and ``datastore_test``
+(from ``test-core.ini``), created the same way::
+
+    uv run ckan dev sql test-core.ini | sudo -u postgres psql   # once
+    uv run pytest ckan/tests/cli                                # one directory, seconds
+    uv run pytest                                               # everything, ~15 minutes
+
 See the `CKAN Documentation <https://docs.ckan.org>`_ for the full
 installation instructions.
 

@@ -60,3 +60,17 @@ def test_dev_writes_an_ini_then_fails_to_connect(tmp_path, monkeypatch):
     assert "debug = true" in text
     assert "ckan dev sql | sudo -u postgres psql" in result.output
     assert "Traceback" not in result.output
+
+
+def test_dev_sql_takes_an_ini_argument(tmp_path, monkeypatch):
+    ini = tmp_path / "test.ini"
+    ini.write_text(
+        "[app:main]\n"
+        "sqlalchemy.url = postgresql://ckan_default:pass@localhost/ckan_test\n"
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["ckan", "dev", "sql", str(ini)])
+    result = CliRunner().invoke(ckan, ["dev", "sql", str(ini)])
+    assert result.exit_code == 0, result.output
+    assert 'CREATE DATABASE "ckan_test"' in result.output
+    assert "datastore" not in result.output
