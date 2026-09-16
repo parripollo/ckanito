@@ -98,6 +98,49 @@ Run the tests
     uv run pytest ckan/tests/logic        # a bigger one, a couple of minutes
     uv run pytest                         # CKAN core and the core extensions, about 15 minutes
 
+One test run at a time per database: the tests share ``ckan_test`` and a
+second ``pytest`` on the same machine makes counts and searches in the
+first one fail at random.
+
+.. raw:: html
+
+   <details>
+   <summary>What a full run looks like (2026-09-16, fresh clone, local PostgreSQL)</summary>
+   <pre>
+   $ uv run pytest
+   ==================== test session starts ====================
+   platform linux -- Python 3.10.19, pytest-9.1.1, pluggy-1.6.0
+   rootdir: /ckanito/ckan
+   configfile: pyproject.toml
+   testpaths: ckan, ckanext
+   plugins: anyio-4.15.1, cov-7.1.0, split-0.11.0, freezegun-0.4.2, factoryboy-2.8.1, ckan-2.13.0a0, Faker-40.28.1
+   collected 3536 items
+
+   ckan/tests/cli/test_clean.py ...
+   ckan/tests/cli/test_cli.py ...............
+   ckan/tests/cli/test_config_tool.py .....
+   ckan/tests/cli/test_db.py ...........
+   ckan/tests/cli/test_dev.py .....
+   ckan/tests/cli/test_file.py ............
+   ckan/tests/cli/test_generate.py .......
+   ckan/tests/cli/test_jobs.py ................
+   ckan/tests/cli/test_search_index.py ...........
+
+   ...
+
+   ckanext/multilingual/tests/test_multilingual_plugin.py ....
+   ckanext/resourceproxy/tests/test_proxy.py ........
+   ckanext/stats/tests/test_stats_lib.py .........
+   ckanext/stats/tests/test_stats_plugin.py .
+   ckanext/textview/tests/test_view.py ...
+   ckanext/tracking/test_tracking.py .........
+   ckanext/videoview/tests/test_view.py .
+   ckanext/webpageview/tests/test_view.py .
+
+   ========== 3534 passed, 2 skipped, 4 warnings in 988.69s (0:16:28) ==========
+   </pre>
+   </details>
+
 The speed of the PostgreSQL tests can be improved by running PostgreSQL in
 memory and turning off durability, as described
 `in the PostgreSQL documentation <http://www.postgresql.org/docs/9.0/static/non-durability.html>`_.
