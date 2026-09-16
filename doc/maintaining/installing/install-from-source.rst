@@ -21,6 +21,25 @@ wiki page.
 From source is also the right installation method for developers who want to
 work on CKAN.
 
+-----------
+Quick start
+-----------
+
+For a development machine you need PostgreSQL (``apt install postgresql``)
+and `uv <https://docs.astral.sh/uv/>`_. Then::
+
+    git clone https://github.com/parripollo/ckanito.git && cd ckanito
+    uv sync
+    uv run ckan dev sql | sudo -u postgres psql   # once: roles and databases
+    uv run ckan dev                               # http://localhost:5000
+
+``ckan dev`` writes ``ckan.ini`` in the current directory, runs the
+migrations, creates the sysadmin ``admin`` (its password is printed once;
+``uv run ckan user setpass admin`` sets a new one) and starts the
+development server. Ctrl+C stops it. Run it again after every
+``git pull``. To run the tests, see :doc:`/contributing/test`. The rest of
+this page is the full, production-oriented procedure.
+
 --------------------------------
 1. Install the required packages
 --------------------------------

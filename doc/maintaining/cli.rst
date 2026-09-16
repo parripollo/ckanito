@@ -93,6 +93,36 @@ with the ``--help`` option, for example:
 
  ckan -c |ckan.ini| user --help
 
+-----------------------------
+CLI command: ckan dev
+-----------------------------
+
+``ckan dev`` sets up (if needed) and runs a local CKAN. It writes
+``ckan.ini`` in the current directory when there is none (the output of
+``ckan generate config`` with development settings: ``debug``, a local
+``storage`` directory and the plugins ``activity datastore datatables_view
+tabledesigner image_view text_view webpage_view video_view audio_view
+stats``), runs ``db upgrade``, creates the sysadmin ``admin`` if there is no
+sysadmin (the password is printed once) and then runs ``ckan run``. Every
+step is idempotent. It does not need ``-c``.
+
+.. parsed-literal::
+
+ $ ckan dev                      # http://localhost:5000
+ $ ckan dev -p 5055 -H 0.0.0.0   # options are passed to ``ckan run``
+ $ ckan dev -r                   # no reloader
+
+If it cannot connect to PostgreSQL it explains what to do and exits with
+status 1. The roles and databases come from ``ckan dev sql``, which only
+prints SQL (idempotent: safe to run again) for the URLs in the given ini,
+or ``ckan.ini`` in the current directory, or the development defaults
+(``ckan_default`` / ``pass``):
+
+.. parsed-literal::
+
+ $ ckan dev sql | sudo -u postgres psql                  # development databases
+ $ ckan dev sql test-core.ini | sudo -u postgres psql    # test databases
+
 -------------------------------
 CLI command: ckan shell
 -------------------------------

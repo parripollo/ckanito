@@ -72,58 +72,31 @@ Teardown
 Virtual Environment based tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
-Install additional dependencies
-===============================
-
-Some additional dependencies are needed to run the tests. Make sure you've
-created a config file at |ckan.ini|, then activate your
-virtual environment:
-
-.. parsed-literal::
-
-    |activate|
-
-Install pytest and other test-specific CKAN dependencies into your virtual
-environment:
-
-.. parsed-literal::
-
-    pip install -r |virtualenv|/src/ckan/dev-requirements.txt
+This is the everyday way: the tests run against your local PostgreSQL.
+``uv sync`` already installed pytest and the other test dependencies
+(they are the ``dev`` group in ``pyproject.toml``, the same list as
+``dev-requirements.txt``).
 
 .. _datastore-test-set-permissions:
-
 
 Set up the test databases
 =========================
 
-Create test databases:
+The tests use the databases named in ``test-core.ini`` (``ckan_test`` and
+``datastore_test``, owned by the same roles as the development
+databases). ``ckan dev sql`` prints the SQL that creates them, with the
+datastore permissions; pipe it to ``psql`` as a superuser, once::
 
-.. parsed-literal::
-
-    sudo -u postgres createdb -O |database_user| |test_database| -E utf-8
-    sudo -u postgres createdb -O |database_user| |test_datastore| -E utf-8
-
-Set the permissions::
-
-    ckan -c test-core.ini datastore set-permissions | sudo -u postgres psql
-
-When the tests run they will use these databases, because in ``test-core.ini``
-they are specified in the ``sqlalchemy.url`` and ``ckan.datastore.write_url``
-connection strings.
-
-
-
-
+    uv run ckan dev sql test-core.ini | sudo -u postgres psql
 
 Run the tests
 =============
 
-To run CKAN's tests using PostgreSQL as the database, you have to give the
-``--ckan-ini=test-core.ini`` option on the command line. This command will
-run the tests for CKAN core and for the core extensions::
+``pytest`` is already configured to use ``test-core.ini``, so::
 
-     pytest --ckan-ini=test-core.ini ckan/ ckanext/
+    uv run pytest ckan/tests/cli          # one directory, seconds
+    uv run pytest ckan/tests/logic        # a bigger one, a couple of minutes
+    uv run pytest                         # CKAN core and the core extensions, about 15 minutes
 
 The speed of the PostgreSQL tests can be improved by running PostgreSQL in
 memory and turning off durability, as described
