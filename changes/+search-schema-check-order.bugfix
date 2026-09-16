@@ -1,0 +1,1 @@
+The search backend schema check runs after the database engine is configured; it used to warn "package_search_index table does not exist yet" on every start even when the table was there.

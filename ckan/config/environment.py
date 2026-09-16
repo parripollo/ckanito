@@ -173,8 +173,6 @@ def update_config() -> None:
             "ckan.display_timezone is not 'server' or a valid timezone"
         )
 
-    search.check_schema()
-
     lib_plugins.reset_package_plugins()
     lib_plugins.register_package_plugins()
     lib_plugins.reset_group_plugins()
@@ -214,6 +212,10 @@ def update_config() -> None:
     # Initialize SQLAlchemy
     engine = engine_from_config(dict(config))
     model.init_model(engine)
+
+    # after init_model: the search backend looks for its table in the
+    # database (upstream checked the Solr schema here, before the engine)
+    search.check_schema()
 
     for plugin in p.PluginImplementations(p.IConfigurable):
         plugin.configure(config)
