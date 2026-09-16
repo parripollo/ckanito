@@ -31,6 +31,7 @@ ckan_deb/DEBIAN/prerm
 ## this file is often created inside the clone
 ## to simplify CLI interactions
 ckan.ini
+storage/
 
 # node.js
 node_modules/
