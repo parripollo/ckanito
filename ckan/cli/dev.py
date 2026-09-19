@@ -166,7 +166,8 @@ def _ensure_sysadmin(ctx: click.Context) -> None:
         fg="green", bold=True)
 
 
-@click.group(invoke_without_command=True)
+@click.group(invoke_without_command=True,
+             short_help="Development only: prepare and run a local CKAN")
 @click.option("-H", "--host", help="Host name (default 127.0.0.1)")
 @click.option("-p", "--port", help="Port number (default 5000)")
 @click.option("-r", "--disable-reloader", is_flag=True,
@@ -174,7 +175,32 @@ def _ensure_sysadmin(ctx: click.Context) -> None:
 @click.pass_context
 def dev(ctx: click.Context, host: Optional[str], port: Optional[str],
         disable_reloader: bool):
-    """Set up (if needed) and run a local CKAN. See `ckan dev sql`."""
+    """Development only: prepare a local CKAN, then start `ckan run`.
+
+    Every step is skipped when it is already done, so this is the command
+    to run after cloning and after every `git pull`:
+
+    \b
+      1. writes ckan.ini when there is none (`ckan generate config` plus
+         debug mode and the development plugins);
+      2. checks that PostgreSQL accepts the URLs in the ini, and stops
+         with instructions when it does not;
+      3. creates or upgrades the tables (`ckan db upgrade`);
+      4. creates the sysadmin `admin` when there is no sysadmin, and
+         prints its password once;
+      5. replaces itself with `ckan run -c ckan.ini`, the development
+         server, passing on --host, --port and --disable-reloader.
+
+    The one thing it cannot do is create the PostgreSQL roles and
+    databases, because that needs a superuser. Once, before the first
+    run:
+
+    \b
+        ckan dev sql | sudo -u postgres psql
+
+    After that `ckan run` always finds what it needs. Never use this on
+    a production site: it writes the config, the tables and the users.
+    """
     if ctx.invoked_subcommand:
         return
     ini = os.environ.get("CKAN_INI", DEFAULT_INI)
