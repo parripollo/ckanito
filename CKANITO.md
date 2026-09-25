@@ -5,7 +5,7 @@ only, no Solr, no Redis. Everything those services did sits behind an
 interface with a PostgreSQL implementation, so that anyone can plug
 another engine back in. The plan, the decisions and the explanation
 written for CKAN core developers live outside this repository, on
-https://ckanito.cluster311.com/plan.html.
+https://ckan.cbadatos.com.ar/plan.html.
 
 The branch tracks `ckan/ckan` `master` and merges it regularly. To keep
 those merges cheap, new code lives in new files and upstream files are
