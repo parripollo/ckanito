@@ -7,6 +7,16 @@ another engine back in. The plan, the decisions and the explanation
 written for CKAN core developers live outside this repository, on
 https://ckan.cbadatos.com.ar/plan.html.
 
+## Branches
+
+- `postgresql-only` (https://github.com/parripollo/ckan/pull/1): only the
+  change itself, as one diff against the `ckan/ckan` master it started
+  from. This is the branch to review.
+- `fixes` (https://github.com/parripollo/ckan/pull/2): small CKAN bugs
+  found on the way, each its own commit, independent of the change above.
+- `master` on https://github.com/parripollo/ckanito: both merged, plus the
+  developer tooling (`ckan dev`, `uv`) and the docs. What the instances run.
+
 The branch tracks `ckan/ckan` `master` and merges it regularly. To keep
 those merges cheap, new code lives in new files and upstream files are
 touched as little as possible. This file is the list of upstream files
