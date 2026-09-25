@@ -51,7 +51,10 @@ _FTS_C = ("notes", "res_name", "res_description")
 _FTS_D = ("url", "ckan_url", "download_url", "res_url", "license",
           "license_id", "license_title", "author", "maintainer", "text",
           "urls")
-_FTS_D_PREFIXES = ("extras_", "res_extras_", "vocab_")
+# title_<lang> and text_<lang> come from ckanext-multilingual; they are
+# stemmed with the site configuration, not with their own language.
+_FTS_A_PREFIXES = ("title_",)
+_FTS_D_PREFIXES = ("extras_", "res_extras_", "vocab_", "text_")
 
 _COLUMNS = (
     "index_id", "id", "site_id", "entity_type", "dataset_type", "name",
@@ -200,7 +203,8 @@ class PostgresSearchBackend(SearchBackend):
             text = _as_text(value)
             if not text:
                 continue
-            if key in _FTS_A:
+            if key in _FTS_A or (key.startswith(_FTS_A_PREFIXES)
+                                 and key != "title_string"):
                 fts["a"].append(text)
             elif key in _FTS_B:
                 fts["b"].append(text)

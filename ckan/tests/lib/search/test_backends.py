@@ -86,3 +86,16 @@ def test_base_contract_is_abstract():
 def test_search_response_defaults():
     response = SearchResponse(count=0, docs=[])
     assert response.facets == {}
+
+
+def test_row_indexes_multilingual_fields():
+    """title_<lang> and text_<lang> (ckanext-multilingual) are part of the
+    full text, with the weight of title and of the catch-all text."""
+    backend = PostgresSearchBackend()
+    row = backend.row({
+        "index_id": "x", "id": "x", "name": "aire", "title": "Aire",
+        "title_string": "Aire", "text": "calidad",
+        "title_en": "Air quality", "text_en": "measurement stations",
+    })
+    assert row["fts_a"] == "aire Aire Air quality"
+    assert row["fts_d"] == "calidad measurement stations"
