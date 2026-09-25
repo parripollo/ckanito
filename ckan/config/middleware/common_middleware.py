@@ -74,9 +74,7 @@ class CKANPostgresSessionInterface(ServerSideSessionInterface):
         )
 
     def _execute(self, sql: str, **params: Any) -> Any:
-        engine = model.meta.engine
-        assert engine is not None, "The database engine is not ready"
-        with engine.begin() as conn:
+        with model.ensure_engine().begin() as conn:
             result = conn.execute(sa.text(sql), params)
             if result.returns_rows:
                 return result.mappings().all()
