@@ -323,6 +323,7 @@ def _read(id: Optional[str], limit: int, group_type: str) -> dict[str, Any]:
     except search.SearchError as se:
         log.error(u'Group search error: %r', se.args)
         extra_vars["query_error"] = True
+        extra_vars["search_facets"] = {}
         extra_vars["page"] = Page(collection=[])
     else:
         extra_vars["page"] = Page(

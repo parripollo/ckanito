@@ -91,6 +91,15 @@ class TestOrganizationRead(object):
         assert org["title"] in response
         assert org["description"] in response
 
+    @pytest.mark.parametrize("headers", [{}, {"HX-Request": "true"}])
+    def test_read_with_invalid_query(self, app, headers):
+        org = factories.Organization()
+        response = app.get(
+            url_for("organization.read", id=org["name"], q="--foo"),
+            headers=headers,
+        )
+        assert response.status_code == 200
+
     def test_read_redirect_when_given_id(self, app):
         org = factories.Organization()
         response = app.get(
