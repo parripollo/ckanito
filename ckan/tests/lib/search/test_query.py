@@ -386,6 +386,13 @@ class TestPackageQuery:
         )
         assert result["results"] == []
 
+    def test_lone_minus_is_ignored(self):
+        pkg1 = factories.Dataset(title="Barrios de Cordoba")
+        factories.Dataset(title="Barrios de Rosario")
+        for q in ["barrios - cordoba", "barrios cordoba -", "- barrios + cordoba"]:
+            result = search.query_for(model.Package).run({"q": q})
+            assert result["results"] == [pkg1["name"]], q
+
     def test_tags_field_split_word(self):
         pkg1 = factories.Dataset(tags=[{"name": "split todo"}])
         result = search.query_for(model.Package).run({"q": u"todo split"})

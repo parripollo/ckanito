@@ -202,6 +202,9 @@ class Compiler:
         for match in re.finditer(
                 r'([+\-]?)(?:"((?:\\.|[^"\\])*)"|(\S+))', query):
             modifier, quoted, word = match.groups()
+            if word is not None and not word.strip("+-"):
+                # a lone operator ("barrios - cordoba"), edismax ignores it
+                continue
             if word is not None and word[0] in "+-":
                 raise SearchQueryError(
                     "Could not parse query %r: unexpected %r" % (query, word))

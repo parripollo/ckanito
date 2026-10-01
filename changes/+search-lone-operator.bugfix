@@ -1,0 +1,1 @@
+A lone '-' or '+' in a free text search (e.g. 'barrios - cordoba') is ignored instead of failing, and a failed search on an organization or group page no longer returns a 500.

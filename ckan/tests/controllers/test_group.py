@@ -734,13 +734,16 @@ class TestGroupInnerSearch(object):
 
         grp = factories.Group()
         factories.Dataset(
-            title="Dataset One", groups=[{"id": grp["id"]}]
+            title="Dataset One", notes="",
+            groups=[{"id": grp["id"]}]
         )
         factories.Dataset(
-            title="Dataset Two", groups=[{"id": grp["id"]}]
+            title="Dataset Two", notes="",
+            groups=[{"id": grp["id"]}]
         )
         factories.Dataset(
-            title="Dataset Three", groups=[{"id": grp["id"]}]
+            title="Dataset Three", notes="",
+            groups=[{"id": grp["id"]}]
         )
 
         grp_url = url_for("group.read", id=grp["name"])
